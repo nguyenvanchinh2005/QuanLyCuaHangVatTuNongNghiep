@@ -10,7 +10,10 @@ Số dòng bên dưới trỏ tới file `index.html`. Danh sách gồm các bi�
 | `duLieuLuu` | 393 | Trạng thái dữ liệu đang dùng trong phiên hiện tại. |
 | `trangHienTai` | 395 | Mã màn hình đang được mở. |
 | `tabQuanTri` | 396 | Tab đang chọn trong khu vực quản trị. |
-| `boLocHienTai` | 397 | Từ khóa tìm kiếm sản phẩm hiện tại. |
+| `boLocHienTai` | 418 | Trạng thái lọc sản phẩm hiện tại, gồm từ khóa, danh mục cha và nhóm danh mục con. |
+| `danhMucDangMo` | 419 | Danh mục cha đang được mở trong menu lọc. |
+| `menuDanhMucDangMo` | 420 | Trạng thái đóng/mở menu lọc danh mục. |
+| `danhSachDanhMuc` | 421 | Danh sách danh mục cha và các nhóm danh mục con hiển thị trong bộ lọc. |
 | `henThongBao` | 398 | Bộ hẹn giờ dùng để ẩn thông báo. |
 | `oNoiDung` | 399 | Phần tử HTML chứa nội dung chính của trang. |
 | `oTimKiem` | 400 | Ô tìm kiếm trên thanh đầu trang. |
@@ -20,8 +23,17 @@ Số dòng bên dưới trỏ tới file `index.html`. Danh sách gồm các bi�
 | `soLuong` | 429 | Tổng số mặt hàng đang có trong giỏ. |
 | `dangChon` | 437 | Trạng thái xác định nút điều hướng có đang được chọn không. |
 | `hamVe` | 446 | Bảng ánh xạ màn hình tới hàm dựng giao diện tương ứng. |
-| `ketQuaSanPham` | 476 | Danh sách sản phẩm sau khi lọc. |
-| `dangTim` | 477 | Cho biết người dùng có đang tìm kiếm hay không. |
+| `danhMucCha` | 512 | Danh mục cha được tìm theo bộ lọc hiện tại để xác định các nhóm con phù hợp. |
+| `noiDungTimKiem` | 514 | Chuỗi thông tin sản phẩm dùng để so khớp từ khóa. |
+| `tenDanhMuc` | 515 | Tên danh mục sản phẩm chuẩn hóa để so khớp bộ lọc. |
+| `khopTuKhoa` | 516 | Kết quả kiểm tra sản phẩm có khớp từ khóa tìm kiếm hay không. |
+| `danhSachTenDanhMuc` | 517 | Tên danh mục cha và các nhóm con được dùng khi lọc theo danh mục cha. |
+| `khopDanhMuc` | 518 | Kết quả kiểm tra sản phẩm có thuộc danh mục được chọn hay không. |
+| `danhMucDangChon` | 526 | Đối tượng danh mục cha đang hiển thị các nhóm con trong menu. |
+| `tenDangLoc` | 527 | Tên danh mục cha hoặc nhóm con đang được chọn để tạo trạng thái giao diện. |
+| `ketQuaSanPham` | 541 | Danh sách sản phẩm sau khi lọc theo từ khóa và danh mục. |
+| `dangLoc` | 542 | Cho biết người dùng đang áp dụng từ khóa hoặc danh mục lọc. |
+| `tieuDeLoc` | 543 | Tên danh mục hoặc nhóm con đang được dùng làm tiêu đề kết quả. |
 | `donCuaToi` | 505 | Các đơn hàng thuộc tài khoản hiện tại. |
 | `danhSach` | 506 | Danh sách đơn hàng sẽ hiển thị. |
 | `sanPham` | 508, 542, 584 | Sản phẩm được tìm thấy trong đơn hàng hoặc được thao tác trong giỏ. |
@@ -45,6 +57,12 @@ Số dòng bên dưới trỏ tới file `index.html`. Danh sách gồm các bi�
 | `nutTrang` | 646 | Nút điều hướng trang vừa được nhấn. |
 | `nutThem` | 648 | Nút thêm sản phẩm vào giỏ vừa được nhấn. |
 | `nutThich` | 650 | Nút yêu thích sản phẩm vừa được nhấn. |
+| `danhMuc` | 531 | Danh mục cha trong vòng lặp dựng danh sách danh mục của menu. |
+| `nhom` | 535 | Tên nhóm danh mục con trong vòng lặp dựng menu. |
+| `nutMoDanhMuc` | 714 | Nút mở hoặc đóng menu lọc danh mục. |
+| `nutDanhMucCha` | 720 | Nút chọn danh mục cha để tải các nhóm con trong menu. |
+| `nutChonDanhMuc` | 729 | Nút chọn toàn bộ sản phẩm của một danh mục cha. |
+| `nutChonNhomDanhMuc` | 738 | Nút chọn một nhóm danh mục con để lọc sản phẩm. |
 | `maSanPham` | 652 | Mã sản phẩm đang được thao tác. |
 | `nutTab` | 667 | Tab quản trị vừa được nhấn. |
 | `nutCapNhatDon` | 669 | Nút cập nhật đơn hàng vừa được nhấn. |
@@ -92,4 +110,4 @@ Các thuộc tính dữ liệu sản phẩm và hóa đơn trong `index.html` d�
 | `Giamgia` | `CTHOADON.Giamgia` | 626 | Giá trị giảm giá; hiện mặc định bằng 0. |
 | `TongHD` | `CTHOADON.TongHD` | 626 | Tổng tiền của dòng hóa đơn. |
 
-Các thuộc tính ảnh (`anh`) và thông tin giao diện đơn hàng như trạng thái/thanh toán không có cột tương ứng trong SQL đã gửi, nên vẫn là dữ liệu hiển thị tạm thời, không phải cột database.
+Các thuộc tính ảnh (`anh`) và thông tin giao diện đơn hàng như trạng thái/thanh toán không có cột tương ứng trong SQL đã gửi, nên vẫn là dữ liệu hiển thị tạm thời, không phải cột database. Bộ lọc danh mục đọc `DanhMuc` hoặc `TenDanhMuc` từ dữ liệu API (có hỗ trợ bí danh `danhMuc` và `category`); các tên này chưa được xác nhận là cột trong schema SQL.
