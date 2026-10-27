@@ -1,6 +1,6 @@
-# Danh sách biến trong `index.html`
+# Danh sách biến trong `public/index.html`
 
-Số dòng bên dưới trỏ tới file `index.html`. Danh sách gồm các biến JavaScript được khai báo bằng `const` hoặc `let`, cùng các biến CSS tùy chỉnh khai báo trong `:root`. Những biến cục bộ trùng tên được gom chung và ghi tất cả dòng khai báo.
+Số dòng bên dưới trỏ tới `public/index.html`. Danh sách gồm các biến JavaScript được khai báo bằng `const` hoặc `let`, cùng các biến CSS tùy chỉnh khai báo trong `:root`. Những biến cục bộ trùng tên được gom chung và ghi tất cả dòng khai báo.
 
 ## Biến JavaScript
 
@@ -46,9 +46,9 @@ Số dòng bên dưới trỏ tới file `index.html`. Danh sách gồm các bi�
 | `cacMon` | 570, 618 | Các mặt hàng hợp lệ trong giỏ, kèm thông tin sản phẩm. |
 | `tongTien` | 571, 622 | Tổng tiền của giỏ hàng hoặc đơn hàng đang tạo. |
 | `laDangKy` | 593 | Cho biết hộp thoại tài khoản đang ở chế độ đăng ký. |
-| `email` | 603, 624 | Email được nhập khi đăng nhập hoặc đặt hàng. |
 | `matKhau` | 604 | Mật khẩu được nhập trong biểu mẫu tài khoản. |
-| `ten` | 606, 623 | Tên tài khoản hoặc tên người nhận hàng. |
+| `ten` | 623 | Tên người nhận hàng. |
+| `tenTaiKhoan` | 626 | Tên tài khoản gắn với đơn demo. |
 | `phuongThuc` | 621 | Phương thức thanh toán được chọn. |
 | `maHoaDon` | 625 | Mã hóa đơn gồm 6 ký tự theo `HOADON.MaHD`. |
 | `donMoi` | 626 | Đối tượng hóa đơn; chi tiết bán hàng mang cùng `MaHD` theo khóa chính ghép. |
@@ -91,7 +91,7 @@ Số dòng bên dưới trỏ tới file `index.html`. Danh sách gồm các bi�
 
 ## Thuộc tính Theo SQL
 
-Các thuộc tính dữ liệu sản phẩm và hóa đơn trong `index.html` dùng tên cột từ schema đã cung cấp. Những vị trí bên dưới là nơi các thuộc tính được đọc hoặc tạo.
+Các thuộc tính dữ liệu sản phẩm và hóa đơn trong `public/index.html` dùng tên cột từ schema đã cung cấp. Những vị trí bên dưới là nơi các thuộc tính được đọc hoặc tạo.
 
 | Thuộc tính | Bảng/cột SQL | Dòng dùng trong HTML | Ý nghĩa |
 |---|---|---:|---|
