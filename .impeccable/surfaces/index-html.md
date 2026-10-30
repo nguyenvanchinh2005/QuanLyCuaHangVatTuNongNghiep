@@ -5,23 +5,23 @@ primary_target: "index.html"
 related_targets: []
 ---
 
-# Surface
+# Bề mặt
 
-Scope: storefront, customer workflows, plant-care guide, and staff console. Platform: web. Mode: operate.
+Phạm vi: cửa hàng, quy trình dành cho khách hàng, hướng dẫn chăm sóc cây và bảng điều khiển dành cho nhân viên. Nền tảng: web. Chế độ: vận hành.
 
-Audience and task: customers browse agricultural supplies, open product details, register, and place demo orders; employees review the management dashboard; admins manage products and inventory. Product and account data use the PHP/MySQL backend; checkout, payment, and photo analysis remain simulated.
+Đối tượng và nhiệm vụ: khách hàng duyệt vật tư nông nghiệp, xem chi tiết sản phẩm, đăng ký và đặt đơn hàng dùng thử; nhân viên theo dõi bảng điều khiển quản lý; quản trị viên quản lý sản phẩm và tồn kho. Dữ liệu sản phẩm và tài khoản sử dụng phần máy chủ PHP/MySQL; quy trình đặt hàng, thanh toán và phân tích ảnh vẫn chỉ được mô phỏng.
 
-Direction: translate the assigned transit-wayfinding diagram into a bright agricultural retail interface. Category routes organize discovery; disease topics connect to suggested supplies; staff workflows share the same route and status grammar. Keep the user's reference's green, photo-rich, category-led storefront character. Memorable moment: a plant-care route moves from symptom to helpful article and matching products without claiming diagnosis.
+Định hướng: chuyển tải sơ đồ chỉ dẫn giao thông công cộng được giao thành giao diện bán lẻ vật tư nông nghiệp tươi sáng. Các tuyến danh mục giúp tổ chức việc khám phá sản phẩm; chủ đề bệnh cây liên kết tới vật tư được gợi ý; quy trình dành cho nhân viên dùng chung quy ước về tuyến và trạng thái. Giữ lại nét cửa hàng xanh tươi, giàu hình ảnh và tổ chức theo danh mục từ trang tham khảo của người dùng. Điểm đáng nhớ: hành trình chăm sóc cây dẫn từ triệu chứng tới bài viết hữu ích và sản phẩm phù hợp mà không khẳng định đó là chẩn đoán.
 
-Challenger review: split-flap and boarding-pass systems are competitive for order and stock states, but weaker for customer identification and product discovery; keep only their stable row/state discipline. Orienteering is competitive for care guidance, but weaker in product clarity; retain linked symptom-to-supply routes. Vertical media and monochrome marketing lose on both axes for this task; retain neither.
+Đánh giá các phương án cạnh tranh: bảng lật cơ học và hệ thống thẻ lên máy bay phù hợp để thể hiện trạng thái đơn hàng và tồn kho, nhưng kém hiệu quả hơn trong việc nhận diện khách hàng và khám phá sản phẩm; chỉ giữ lại cách trình bày hàng/trạng thái nhất quán của chúng. Định hướng tìm đường phù hợp với hướng dẫn chăm sóc cây nhưng chưa làm rõ sản phẩm; giữ lại các tuyến liên kết triệu chứng với vật tư. Nội dung truyền thông dạng dọc và phong cách tiếp thị đơn sắc đều không phù hợp với cả hai tiêu chí trong nhiệm vụ này; không sử dụng.
 
-## Direction contract
+## Quy ước định hướng
 
-THESIS: A category-led farm-supply store where care routes connect products, plant guidance, and staff work; refuse a generic catalog disconnected from crop problems.
-OWN-WORLD: Translate transit wayfinding into a bright botanical storefront: clear leaf-green routes, citrus action accents, photo-led products, and fixed route/status cues across store, orders, and admin.
-STORY: Growers search a crop or symptom, follow practical guidance, compare related supplies, and place a demo order; staff update the same catalog and its states.
-FIRST VIEWPORT: Compact service strip, brand/search/account/cart header, route-like category navigation, a wide crop-care feature with one action, and a visible product row below.
-FORM: Grounded direction 6, translated from midnight transit diagram to the user's green retail reference; seed key 09a64426.
-FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+LUẬN ĐIỂM: Cửa hàng vật tư nông nghiệp tổ chức theo danh mục, trong đó các tuyến chăm sóc kết nối sản phẩm, hướng dẫn trồng cây và công việc của nhân viên; không xây dựng một danh mục chung chung tách rời các vấn đề canh tác.
+THẾ GIỚI RIÊNG: Chuyển tải cách chỉ dẫn giao thông thành cửa hàng thực vật tươi sáng: tuyến xanh lá rõ ràng, điểm nhấn thao tác màu cam, sản phẩm nổi bật bằng hình ảnh và chỉ dẫn tuyến/trạng thái nhất quán trong cửa hàng, đơn hàng và trang quản trị.
+CÂU CHUYỆN: Người trồng tìm kiếm cây trồng hoặc triệu chứng, làm theo hướng dẫn thực tế, so sánh vật tư liên quan và đặt đơn hàng dùng thử; nhân viên cập nhật cùng danh mục và trạng thái đó.
+MÀN HÌNH ĐẦU TIÊN: Thanh thông tin dịch vụ gọn; phần đầu trang có thương hiệu/tìm kiếm/tài khoản/giỏ hàng; điều hướng danh mục như các tuyến đường; khu vực lớn giới thiệu chăm sóc cây với một thao tác; bên dưới hiển thị một hàng sản phẩm.
+HÌNH THỨC: Định hướng số 6, được chuyển thể từ sơ đồ giao thông ban đêm sang phong cách cửa hàng xanh theo trang tham khảo của người dùng; mã khởi tạo 09a64426.
+HOÀN THIỆN: Chưa được rà soát và chưa có tài liệu thì chưa thể xem là hoàn tất; bản dựng này kết thúc bằng bước rà soát hoàn thiện, kết luận, tài liệu DESIGN.md và thông tin nguồn gốc của mọi ảnh raster được phát hành.
 
-Unresolved: real product catalog, stock, disease content, price data, brand assets, and integrations were not supplied.
+Chưa có: danh mục sản phẩm thực tế, tồn kho, nội dung về bệnh cây, dữ liệu giá, tài nguyên thương hiệu và các tích hợp.

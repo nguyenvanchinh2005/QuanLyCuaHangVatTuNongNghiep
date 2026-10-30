@@ -1,6 +1,25 @@
-# Danh sách biến trong `public/index.html`
+# Danh sách biến giao diện
 
-Số dòng bên dưới trỏ tới `public/index.html`. Danh sách gồm các biến JavaScript được khai báo bằng `const` hoặc `let`, cùng các biến CSS tùy chỉnh khai báo trong `:root`. Những biến cục bộ trùng tên được gom chung và ghi tất cả dòng khai báo.
+Tài liệu ghi lại các biến giao diện và thuộc tính dữ liệu đang dùng trong dự án. Mã JavaScript hiện nằm trong `public/assets/js/app.js`; các biến trạng thái cấp mô-đun được bổ sung bên dưới. Bảng biến JavaScript hiện có và bảng thuộc tính SQL được giữ lại để đối chiếu với phiên bản giao diện trước. Các biến CSS được khai báo trong `public/assets/css/app.css`.
+
+## Biến trạng thái trong `public/assets/js/app.js`
+
+| Biến | Dòng | Ý nghĩa |
+|---|---:|---|
+| `duLieuQuanTri` | 11 | Dữ liệu đơn hàng và tài khoản dành cho khu vực quản trị. |
+| `dangTaiSanPham` | 12 | Cho biết dữ liệu sản phẩm đang được tải. |
+| `loiTaiSanPham` | 13 | Cho biết lần tải sản phẩm có gặp lỗi hay không. |
+| `dangTaiDuLieuQuanTri` | 14 | Cho biết dữ liệu quản trị đang được tải. |
+| `daTaiDuLieuQuanTri` | 15 | Cho biết dữ liệu quản trị đã được tải thành công. |
+| `loiTaiDuLieuQuanTri` | 16 | Cho biết lần tải dữ liệu quản trị có gặp lỗi hay không. |
+| `trangVao` | 17 | Màn hình ban đầu, lấy từ thuộc tính `data-trang-vao` của trang. |
+| `vaiTroYeuCau` | 18 | Vai trò cần có để truy cập trang, lấy từ thuộc tính `data-vai-tro-yeu-cau`. |
+| `tokenCsrf` | 21 | Mã chống giả mạo yêu cầu được gửi kèm các yêu cầu API cần bảo vệ. |
+| `cheDoTaiKhoan` | 22 | Chế độ hiện tại của hộp thoại tài khoản. |
+| `maSanPhamDangSua` | 23 | Mã sản phẩm đang được chỉnh sửa trong khu vực quản trị. |
+| `soSanPhamMoiTrang` | 25 | Số sản phẩm tối đa hiển thị trên mỗi trang. |
+| `trangSanPham` | 26 | Số thứ tự trang sản phẩm đang hiển thị. |
+| `oHopChiTietSanPham` | 53 | Phần tử hộp thoại hiển thị chi tiết sản phẩm. |
 
 ## Biến JavaScript
 

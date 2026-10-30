@@ -1,6 +1,6 @@
 ---
-name: Vuon Pho
-description: Agricultural supplies storefront and plant-care guide
+name: Vườn Phố
+description: Cửa hàng vật tư nông nghiệp và hướng dẫn chăm sóc cây
 colors:
   leaf-green: "#176b42"
   leaf-pale: "#e9f2e8"
@@ -50,103 +50,103 @@ components:
     height: "40px"
 ---
 
-# Design System: Vuon Pho
+# Hệ thống thiết kế: Vườn Phố
 
-## Overview
+## Tổng quan
 
-The interface is a practical Vietnamese garden-supply storefront with clear paths into shopping, plant-care information, and store operations. The storefront is the default view; authenticated employees and admins enter the management interface by role. Category-led browsing carries the storefront; route and status cues make operational views easier to scan. Product cards and product details render only from the PHP API backed by MySQL. Admin CRUD changes are persisted; employee product access is read-only. Account sessions are server-authenticated.
+Giao diện là một cửa hàng vật tư làm vườn thiết thực tại Việt Nam, giúp người dùng dễ dàng mua sắm, tìm hiểu thông tin chăm sóc cây và quản lý cửa hàng. Cửa hàng là màn hình mặc định; nhân viên và quản trị viên đã xác thực truy cập giao diện quản lý theo vai trò. Cửa hàng tổ chức nội dung theo danh mục; chỉ dẫn về trang và trạng thái giúp dễ theo dõi các màn hình vận hành. Thẻ và chi tiết sản phẩm chỉ hiển thị dữ liệu từ API PHP kết nối MySQL. Các thao tác tạo, đọc, cập nhật và xóa của quản trị viên được lưu lại; nhân viên chỉ có quyền xem sản phẩm. Phiên tài khoản được máy chủ xác thực.
 
-## Colors
+## Màu sắc
 
-The palette pairs plant greens with pale leaf surfaces and quiet neutral working areas; a darker citrus accent marks product labels.
+Bảng màu kết hợp sắc xanh cây với các bề mặt xanh lá nhạt và vùng trung tính dịu mắt; màu cam đậm được dùng làm điểm nhấn cho nhãn sản phẩm.
 
-### Primary
-- **Leaf Green** (#176b42): Primary actions, active navigation, links, and agricultural identity.
-- **Pale Leaf** (#e9f2e8): Hero copy surface and selected light areas.
+### Màu chính
+- **Xanh Lá** (#176b42): Thao tác chính, mục điều hướng đang chọn, liên kết và nhận diện ngành nông nghiệp.
+- **Xanh Lá Nhạt** (#e9f2e8): Nền nội dung nổi bật và một số vùng sáng.
 
-### Secondary
-- **Citrus** (#a94d13): Product labels and small emphasis; paired with white text for readable contrast.
+### Màu phụ
+- **Cam** (#a94d13): Nhãn sản phẩm và các điểm nhấn nhỏ; khi dùng chữ trắng cần đảm bảo độ tương phản dễ đọc.
 
-### Neutral
-- **Garden Background** (#f6f7f3): Main page background.
-- **Garden Text** (#252b25): Headings and primary text.
-- **Garden Muted** (#68736b): Secondary labels and descriptions.
-- **Garden Border** (#e3e8df): Card, field, and table boundaries.
-- **Paper** (#ffffff): Product cards, forms, and drawers.
-- **Alert** (#bd4c3e): Destructive and error states.
+### Màu trung tính
+- **Nền Vườn** (#f6f7f3): Nền chính của trang.
+- **Chữ Vườn** (#252b25): Tiêu đề và nội dung chính.
+- **Chữ Phụ** (#68736b): Nhãn phụ và phần mô tả.
+- **Viền Vườn** (#e3e8df): Đường viền thẻ, trường nhập và bảng.
+- **Trắng** (#ffffff): Thẻ sản phẩm, biểu mẫu và ngăn trượt.
+- **Cảnh báo** (#bd4c3e): Trạng thái lỗi và thao tác xóa.
 
-## Typography
+## Kiểu chữ
 
-**Display Font:** Figtree, sans-serif  
-**Body Font:** Figtree, sans-serif  
-**Label Font:** Figtree, sans-serif
+- **Phông chữ tiêu đề lớn:** Figtree, sans-serif
+- **Phông chữ nội dung:** Figtree, sans-serif
+- **Phông chữ nhãn:** Figtree, sans-serif
 
-**Character:** A compact, friendly sans-serif keeps product names and operational data readable without making the store feel clinical.
+**Đặc điểm:** Phông chữ không chân gọn gàng, thân thiện giúp tên sản phẩm và dữ liệu vận hành dễ đọc mà không khiến cửa hàng trở nên khô cứng.
 
-### Hierarchy
-- **Display** (700, 48px desktop / 40px tablet / 34px mobile, 1.05): Storefront lead headline.
-- **Headline** (700, 30px, normal): View titles.
-- **Title** (700, 19–23px, normal): Section and panel headings.
-- **Body** (400, 13–15px, 1.5–1.65): Product descriptions, guidance, and supporting copy.
-- **Label** (700, 11–12px): Navigation, filters, categories, and status cues.
+### Thứ bậc
+- **Tiêu đề lớn** (700, 48px trên máy tính / 40px trên máy tính bảng / 34px trên điện thoại, 1.05): Tiêu đề chính của cửa hàng.
+- **Tiêu đề** (700, 30px, bình thường): Tiêu đề màn hình.
+- **Tiêu đề mục** (700, 19–23px, bình thường): Tiêu đề phần và bảng điều khiển.
+- **Nội dung** (400, 13–15px, 1.5–1.65): Mô tả sản phẩm, hướng dẫn và nội dung bổ trợ.
+- **Nhãn** (700, 11–12px): Điều hướng, bộ lọc, danh mục và trạng thái.
 
-## Layout
+## Bố cục
 
-The desktop storefront uses a centered content width of 1,240px, a wide two-part crop-care feature, six category columns, and four product columns. At tablet sizes, category and product columns reduce; below 640px, categories use three columns, products use two, and a fixed bottom navigation adapts to the signed-in role. The search row wraps onto its own line on small screens. Tables scroll within their own bounded region instead of widening the page.
+Trên máy tính, cửa hàng có vùng nội dung rộng 1.240px, khu vực giới thiệu chăm sóc cây chia làm hai phần, sáu cột danh mục và bốn cột sản phẩm. Trên máy tính bảng, số cột danh mục và sản phẩm giảm xuống; dưới 640px, danh mục hiển thị thành ba cột, sản phẩm thành hai cột và thanh điều hướng cố định phía dưới thay đổi theo vai trò đã đăng nhập. Trên màn hình nhỏ, hàng tìm kiếm tự xuống dòng. Bảng cuộn trong vùng giới hạn riêng thay vì làm trang rộng ra.
 
-## Elevation & Depth
+## Độ nổi và chiều sâu
 
-Surfaces are mostly flat and separated by fine borders. Product cards receive a soft offset shadow on hover, and the cart drawer uses a stronger side shadow to distinguish it from the page. Focus is shown with a clear outline rather than elevation.
+Bề mặt phần lớn phẳng và được phân tách bằng đường viền mảnh. Khi rê chuột, thẻ sản phẩm có bóng đổ nhẹ lệch xuống; ngăn giỏ hàng dùng bóng cạnh đậm hơn để tách biệt với trang. Trạng thái lấy nét được thể hiện bằng đường viền rõ ràng thay vì hiệu ứng nổi.
 
-### Shadow Vocabulary
-- **Card Hover** (`0 14px 38px rgba(27, 55, 35, .09)`): Hover state for product cards.
-- **Drawer** (`-12px 0 38px rgba(20, 33, 25, .16)`): Open cart drawer.
+### Quy ước bóng đổ
+- **Khi rê chuột lên thẻ** (`0 14px 38px rgba(27, 55, 35, .09)`): Trạng thái rê chuột của thẻ sản phẩm.
+- **Ngăn trượt** (`-12px 0 38px rgba(20, 33, 25, .16)`): Ngăn giỏ hàng đang mở.
 
-## Shapes
+## Hình dạng
 
-Buttons, fields, and repeated items use restrained 4–5px corners. Small status labels use rounded pills, while category pictograms sit in circles. Borders do most of the grouping work.
+Nút, trường nhập và các mục lặp lại dùng góc bo vừa phải từ 4–5px. Nhãn trạng thái nhỏ có dạng viên thuốc bo tròn, còn biểu tượng danh mục nằm trong hình tròn. Đường viền đảm nhiệm phần lớn việc phân nhóm.
 
-## Components
+## Thành phần
 
-### Buttons
-- **Shape:** Compact 4px corners.
-- **Primary:** Leaf green with white text; 43px minimum height and 17px horizontal padding.
-- **Hover / Focus:** Primary darkens slightly; keyboard focus uses a visible citrus outline.
-- **Secondary / Ghost:** White fill or transparent surface with a fine border or green text.
+### Nút
+- **Hình dạng:** Góc bo gọn 4px.
+- **Nút chính:** Nền xanh lá, chữ trắng; chiều cao tối thiểu 43px và khoảng đệm ngang 17px.
+- **Rê chuột / Lấy nét:** Nút chính tối hơn đôi chút; khi lấy nét bằng bàn phím, dùng viền cam dễ nhận biết.
+- **Nút phụ / Trong suốt:** Nền trắng hoặc trong suốt, có viền mảnh hoặc chữ màu xanh lá.
 
-### Chips
-- **Style:** Small filled labels for product tags and status; maintain contrast between text and fill.
-- **State:** Selected navigation and tabs use leaf-green text with a 2px underline.
+### Nhãn
+- **Kiểu:** Nhãn nền màu nhỏ dành cho thẻ sản phẩm và trạng thái; cần đảm bảo độ tương phản giữa chữ và nền.
+- **Trạng thái:** Mục điều hướng và thẻ đang chọn dùng chữ xanh lá cùng gạch chân 2px.
 
-### Cards / Containers
-- **Corner Style:** 4px.
-- **Background:** White against the garden background.
-- **Shadow Strategy:** Flat at rest; soft shadow on product-card hover only.
-- **Border:** Fine garden-border outline.
-- **Internal Padding:** 9–20px depending on density.
+### Thẻ / Khung chứa
+- **Góc bo:** 4px.
+- **Nền:** Màu trắng trên nền vườn.
+- **Bóng đổ:** Phẳng ở trạng thái bình thường; chỉ thêm bóng nhẹ khi rê chuột lên thẻ sản phẩm.
+- **Viền:** Đường viền mảnh theo màu viền vườn.
+- **Khoảng đệm bên trong:** 9–20px tùy mật độ nội dung.
 
-### Inputs / Fields
-- **Style:** White surface, 1px garden-border stroke, 4px corners.
-- **Focus:** Leaf-green border and a subtle green focus halo.
-- **Error / Disabled:** Errors use the alert color; disabled actions remain visibly unavailable.
+### Ô nhập / Trường dữ liệu
+- **Kiểu:** Nền trắng, viền màu viền vườn dày 1px, góc bo 4px.
+- **Lấy nét:** Viền xanh lá và quầng sáng xanh nhẹ.
+- **Lỗi / Vô hiệu hóa:** Lỗi dùng màu cảnh báo; thao tác bị vô hiệu hóa vẫn phải thể hiện rõ là không khả dụng.
 
-### Navigation
-- **Desktop:** White horizontal route bar with icon and label; active route uses green text and underline.
-- **Mobile:** Four customer actions or five staff actions with icon and short label, sized for thumb use.
-- **Search:** Wide shared header field with a solid green submit action.
+### Điều hướng
+- **Máy tính:** Thanh điều hướng ngang màu trắng có biểu tượng và nhãn; mục đang mở dùng chữ xanh lá và gạch chân.
+- **Điện thoại:** Bốn thao tác dành cho khách hàng hoặc năm thao tác dành cho nhân viên, có biểu tượng và nhãn ngắn, kích thước phù hợp thao tác bằng ngón tay cái.
+- **Tìm kiếm:** Trường tìm kiếm rộng dùng chung trên đầu trang, kèm nút gửi màu xanh lá đặc.
 
-### Product Cards
-- **Content:** Real subject image, category, product name, stock, price, and a separate add-to-cart action.
-- **Behavior:** Render only from backend API data; product name/card opens a detail dialog, favorite and cart actions remain distinct, and filters update the returned set.
+### Thẻ sản phẩm
+- **Nội dung:** Ảnh sản phẩm thực tế, danh mục, tên sản phẩm, tồn kho, giá và thao tác thêm vào giỏ riêng biệt.
+- **Cách hoạt động:** Chỉ hiển thị dữ liệu từ API phía máy chủ; nhấn tên/thẻ sản phẩm sẽ mở hộp thoại chi tiết, thao tác yêu thích và giỏ hàng tách biệt, bộ lọc cập nhật danh sách kết quả.
 
-## Do's and Don'ts
+## Nên làm và không nên làm
 
-- Do keep product, category, order, and inventory states scannable with stable labels.
-- Do connect plant-care articles to related supplies without presenting the link as a diagnosis.
-- Do load product data from the backend endpoint; the backend, not the browser, connects to the database.
-- Do preserve the two-column mobile product grid and the fixed bottom navigation.
-- Do label frontend-only payment and photo-analysis outcomes as simulated.
-- Don't imply persistent orders/payments or automatic disease recognition; authenticated accounts and admin-managed products are persisted in MySQL.
-- Don't add a hardcoded product catalog or connect frontend code directly to a database.
-- Don't reuse the storefront's one-off eyebrow/kicker labels as a system-wide heading pattern.
-- Don't use the citrus accent for small white text unless its contrast remains at least 4.5:1.
+- Nên trình bày trạng thái sản phẩm, danh mục, đơn hàng và tồn kho bằng nhãn nhất quán, dễ quét.
+- Nên liên kết bài viết chăm sóc cây với vật tư liên quan nhưng không mô tả liên kết đó như một kết quả chẩn đoán.
+- Nên tải dữ liệu sản phẩm từ điểm cuối của máy chủ; máy chủ, không phải trình duyệt, kết nối với cơ sở dữ liệu.
+- Nên giữ lưới sản phẩm hai cột trên điện thoại và thanh điều hướng cố định phía dưới.
+- Nên ghi rõ các kết quả thanh toán và phân tích ảnh chỉ có ở phía giao diện là mô phỏng.
+- Không ám chỉ đơn hàng/thanh toán được lưu hoặc bệnh cây được nhận diện tự động; tài khoản đã xác thực và sản phẩm do quản trị viên quản lý được lưu trong MySQL.
+- Không thêm danh mục sản phẩm cố định trong mã hoặc kết nối trực tiếp giao diện với cơ sở dữ liệu.
+- Không dùng các nhãn trang trí riêng của cửa hàng làm quy ước tiêu đề cho toàn hệ thống.
+- Không dùng màu cam làm màu chữ nhỏ trên nền trắng nếu độ tương phản thấp hơn 4.5:1.

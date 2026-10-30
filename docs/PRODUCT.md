@@ -1,54 +1,54 @@
-# Product
+# Sản phẩm
 
 <!-- impeccable:product-schema 1 -->
 
-## Platform
+## Nền tảng
 
-web
+Ứng dụng web
 
-## Stack
+## Công nghệ
 
-Static HTML/CSS/JavaScript frontend with a PHP/PDO API and MySQL-backed product inventory and account sessions.
+Giao diện phía trước sử dụng HTML/CSS/JavaScript tĩnh, kết nối API PHP/PDO và MySQL để quản lý tồn kho sản phẩm và phiên tài khoản.
 
-## Users
+## Người dùng
 
-Customers buy agricultural supplies; employees review store operations; admins manage products and stock. The default page is the public storefront, with role-based entry to the management interface.
+Khách hàng mua vật tư nông nghiệp; nhân viên theo dõi hoạt động cửa hàng; quản trị viên quản lý sản phẩm và tồn kho. Trang mặc định là cửa hàng công khai; quyền truy cập giao diện quản lý được phân theo vai trò.
 
-## Product Purpose
+## Mục đích sản phẩm
 
-A web storefront and management interface for agricultural supplies. Customers browse products, view details, and create accounts. Employees review the management dashboard; admins manage the MySQL product catalog and inventory. Plant-care photo support and checkout remain simulations.
+Ứng dụng web gồm cửa hàng và giao diện quản lý vật tư nông nghiệp. Khách hàng duyệt sản phẩm, xem chi tiết và tạo tài khoản. Nhân viên theo dõi bảng điều khiển quản lý; quản trị viên quản lý danh mục sản phẩm và tồn kho trong MySQL. Tính năng hỗ trợ chăm sóc cây qua ảnh và thanh toán vẫn chỉ là mô phỏng.
 
-## Positioning
+## Định vị
 
-Combines a practical agricultural-supply storefront with plant-care guidance and a photo-based disease-support entry point.
+Kết hợp cửa hàng vật tư nông nghiệp thiết thực với hướng dẫn chăm sóc cây và tính năng hỗ trợ nhận biết bệnh qua ảnh.
 
-## Operating Context
+## Bối cảnh sử dụng
 
-Customers browse categories such as soil, fertilizer, seeds, and pest control. Product cards and detail views use the backend API. Employees and admins are routed to a protected management page; admin product changes are persisted in MySQL.
+Khách hàng duyệt các danh mục như đất, phân bón, hạt giống và thuốc bảo vệ thực vật. Thẻ sản phẩm và trang chi tiết lấy dữ liệu qua API phía máy chủ. Nhân viên và quản trị viên được chuyển đến trang quản lý có bảo vệ; thay đổi sản phẩm của quản trị viên được lưu trong MySQL.
 
-## Capabilities and Constraints
+## Tính năng và giới hạn
 
-- Registration, login, and account-management screens.
-- Product categories, product details, prices, stock, search, and filters once product data is returned by the backend.
-- Cart, order placement, order management, and simulated online payment.
-- Plant-disease articles, photo upload/capture affordance, simulated identification result, and related-product suggestions.
-- Admin views for users, products, orders, and disease data; employees have read-only access to the management interface.
-- Registration and login use server-side sessions. Public registration creates customer accounts only; employee/admin accounts are created through the CLI.
-- The PHP backend reads products through `GET /api/san-pham` and permits only admins to create, update, and delete products. The browser must not connect directly to MySQL.
-- Orders, payments, and disease recognition remain prototype-only and are not persisted by the backend.
-- Variable and function names in source code should use Vietnamese without diacritics, written as joined words.
+- Màn hình đăng ký, đăng nhập và quản lý tài khoản.
+- Danh mục, chi tiết, giá, tồn kho, tìm kiếm và bộ lọc sản phẩm sau khi máy chủ trả về dữ liệu.
+- Giỏ hàng, đặt hàng, quản lý đơn hàng và thanh toán trực tuyến mô phỏng.
+- Bài viết về bệnh cây, chức năng chọn/chụp ảnh, kết quả nhận diện mô phỏng và gợi ý sản phẩm liên quan.
+- Giao diện quản trị dành cho người dùng, sản phẩm, đơn hàng và dữ liệu bệnh cây; nhân viên chỉ có quyền xem trong giao diện quản lý.
+- Đăng ký và đăng nhập sử dụng phiên phía máy chủ. Người dùng chỉ có thể tự đăng ký tài khoản khách hàng; tài khoản nhân viên/quản trị viên được tạo qua CLI.
+- Máy chủ PHP đọc sản phẩm qua `GET /api/san-pham` và chỉ cho phép quản trị viên tạo, cập nhật hoặc xóa sản phẩm. Trình duyệt không được kết nối trực tiếp với MySQL.
+- Đơn hàng, thanh toán và nhận diện bệnh cây chỉ dành cho bản mẫu, không được máy chủ lưu lại.
+- Tên biến và hàm trong mã nguồn nên dùng tiếng Việt không dấu, viết liền các từ.
 
-## Brand Commitments
+## Cam kết thương hiệu
 
-The user referenced https://nongnghieppho.vn/ as inspiration for the agricultural-supplies storefront and its category-led shopping experience. The product is not represented as that company's official website.
+Người dùng cung cấp https://nongnghieppho.vn/ làm nguồn cảm hứng cho cửa hàng vật tư nông nghiệp và trải nghiệm mua sắm theo danh mục. Sản phẩm này không được giới thiệu là trang web chính thức của doanh nghiệp đó.
 
-## Evidence on Hand
+## Cơ sở thông tin
 
-The explicit feature brief and the referenced public storefront are available. No brand assets, payment integration, or disease-recognition model were supplied. The backend uses the existing MySQL product table and the `taikhoan` table for authenticated accounts.
+Hiện có mô tả tính năng cụ thể và trang cửa hàng công khai được tham chiếu. Chưa có tài nguyên thương hiệu, tích hợp thanh toán hoặc mô hình nhận diện bệnh cây. Máy chủ sử dụng bảng sản phẩm hiện có trong MySQL và bảng `taikhoan` để quản lý tài khoản đã xác thực.
 
-## Product Principles
+## Nguyên tắc sản phẩm
 
-- Make common shopping and store-operations tasks directly discoverable.
-- Use agricultural terminology that is understandable to Vietnamese growers.
-- Keep disease guidance connected to relevant supplies without presenting suggestions as diagnosis or medical certainty.
-- Make prototype-only checkout and photo-analysis behavior visible; do not imply real payment or automated diagnosis.
+- Giúp người dùng dễ tìm thấy các thao tác mua sắm và vận hành cửa hàng thường dùng.
+- Sử dụng thuật ngữ nông nghiệp dễ hiểu với người trồng trọt tại Việt Nam.
+- Gắn hướng dẫn về bệnh cây với vật tư phù hợp nhưng không trình bày gợi ý như kết quả chẩn đoán chắc chắn.
+- Thể hiện rõ thanh toán và phân tích ảnh chỉ là tính năng của bản mẫu; không ám chỉ có thanh toán thực hoặc chẩn đoán tự động.
