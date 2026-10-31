@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#176b42">
+  <meta name="description" content="Cửa hàng vật tư nông nghiệp và cẩm nang chăm sóc cây trồng.">
+  <title>Vườn Phố | Vật tư nông nghiệp</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <link rel="stylesheet" href="/assets/css/app.css">
+</head>
+<body>
+  <a class="bo-qua" href="#noi-dung">Bỏ qua điều hướng</a>
+  <div class="cum-dau-trang">
+    <div class="thanh-top">
+      <div class="thanh-top-ben-trong">
+        <span><i data-lucide="truck"></i> Giao hàng toàn quốc</span>
+        <div class="thanh-top-nhom">
+          <span><i data-lucide="badge-check"></i> Vật tư chọn lọc</span>
+          <span><i data-lucide="phone"></i> Tư vấn chăm cây: 0865399086</span>
+        </div>
+      </div>
+    </div>
+    <header class="dau-trang">
+      <button class="thuong-hieu" data-xem="cua-hang" aria-label="Về cửa hàng">
+        <span class="logo-la"><i data-lucide="sprout"></i></span>
+        <span><strong>VƯỜN PHỐ</strong><small>Vật tư nông nghiệp</small></span>
+      </button>
+      <form class="tim-kiem" id="formTimKiem" role="search">
+        <i data-lucide="search"></i>
+        <input id="oTimKiem" type="search" placeholder="Tìm phân bón, hạt giống, bệnh cây..." aria-label="Tìm sản phẩm hoặc bệnh cây">
+        <button class="nut-tim" type="submit">Tìm kiếm</button>
+      </form>
+      <div class="nut-van-chuyen"><i data-lucide="map-pin"></i><span><small>Khu vực nhận hàng</small><strong>Toàn quốc</strong></span></div>
+      <button class="nut-dang-nhap" id="nutTaiKhoan">Đăng nhập</button>
+      <button class="nut-icon tai-khoan-nut" data-xem="tai-khoan" aria-label="Tài khoản"><i data-lucide="user-round"></i></button>
+      <button class="nut-icon" id="nutMoGio" aria-label="Mở giỏ hàng"><i data-lucide="shopping-bag"></i><span class="so-gio" id="soLuongGio">0</span></button>
+    </header>
+    <nav class="dieu-huong" aria-label="Điều hướng chính">
+      <div class="dieu-huong-ben-trong">
+        <span class="dau-nav-danh-muc"><i data-lucide="menu" aria-hidden="true"></i> Danh mục sản phẩm</span>
+        <div class="dieu-huong-chinh">
+          <button class="nut-nav dang-chon" data-xem="cua-hang"><i data-lucide="store"></i> Cửa hàng</button>
+          <button class="nut-nav" data-xem="cam-nang"><i data-lucide="book-open-text"></i> Cẩm nang bệnh cây</button>
+          <button class="nut-nav" data-xem="don-hang"><i data-lucide="package-check"></i> Đơn hàng</button>
+          <button class="nut-nav" data-xem="tai-khoan"><i data-lucide="user-round"></i> Tài khoản</button>
+          <button class="nut-nav quan-tri-nav an" data-xem="quan-tri" hidden><i data-lucide="layout-dashboard"></i> Quản trị</button>
+        </div>
+      </div>
+    </nav>
+  </div>
+  <main id="noi-dung" tabindex="-1"></main>
+  <footer class="chan-trang">
+    <div class="chan-trang-ben-trong">
+      <div><strong>VƯỜN PHỐ</strong><p>Vật tư làm vườn và thông tin chăm sóc cây trồng.</p></div>
+      <small>© 2026 Vườn Phố</small>
+    </div>
+  </footer>
+  <nav class="di-dong-nav" aria-label="Điều hướng nhanh">
+    <button class="nut-di-dong dang-chon" data-xem="cua-hang"><i data-lucide="store"></i><span>Cửa hàng</span></button>
+    <button class="nut-di-dong" data-xem="cam-nang"><i data-lucide="leaf"></i><span>Bệnh cây</span></button>
+    <button class="nut-di-dong" id="nutGioDiDong"><i data-lucide="shopping-bag"></i><span>Giỏ hàng</span></button>
+    <button class="nut-di-dong" data-xem="don-hang"><i data-lucide="package-check"></i><span>Đơn hàng</span></button>
+    <button class="nut-di-dong an" data-xem="quan-tri" hidden><i data-lucide="layout-dashboard"></i><span>Quản trị</span></button>
+  </nav>
+  <div class="lop-phu" id="lopPhu" aria-hidden="true"></div>
+  <aside class="ngan-keo" id="nganGio" aria-label="Giỏ hàng" aria-hidden="true">
+    <div class="dau-ngan-keo"><h2>Giỏ hàng <span id="nhanSoGio"></span></h2><button class="nut-dong" id="nutDongGio" aria-label="Đóng giỏ hàng"><i data-lucide="x"></i></button></div>
+    <div class="noi-dung-ngan-keo" id="noiDungGio"></div>
+  </aside>
+  <dialog id="hopTaiKhoan">
+    <div class="hop-thoai">
+      <div class="dau-hop"><div><h2 id="tieuDeTaiKhoan">Đăng nhập</h2><p id="moTaTaiKhoan">Đăng nhập để tiếp tục mua sắm hoặc quản lý cửa hàng.</p></div><button class="nut-dong" data-dong-hop aria-label="Đóng"><i data-lucide="x"></i></button></div>
+      <form class="form-tai-khoan" id="formTaiKhoan"></form>
+      <p class="ghi-chu" style="margin:14px 0 0">Tài khoản được xác thực trên máy chủ bằng dữ liệu trong bảng taikhoan.</p>
+    </div>
+  </dialog>
+  <dialog id="hopBaiViet"><div class="hop-thoai" id="noiDungBaiViet"></div></dialog>
+  <dialog id="hopChiTietSanPham" class="chi-tiet-san-pham"><div class="hop-thoai" id="noiDungChiTietSanPham"></div></dialog>
+  <div class="thong-bao" id="thongBao" role="status" aria-live="polite"></div>
+
+  <script src="/assets/js/app.js" defer></script>
+</body>
+</html>
