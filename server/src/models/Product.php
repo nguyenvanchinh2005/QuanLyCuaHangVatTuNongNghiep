@@ -46,7 +46,7 @@ final class Product
             'SELECT DuongDan
              FROM hinhanhsanpham
              WHERE MaSP = :maSP
-             ORDER BY AnhChinh DESC, ThuTu ASC, MaAnh ASC
+             ORDER BY MaAnh ASC
              LIMIT 1'
         );
         $cauTruyVan->execute(['maSP' => $maSP]);

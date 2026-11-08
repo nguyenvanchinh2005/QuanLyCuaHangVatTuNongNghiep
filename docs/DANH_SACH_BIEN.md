@@ -17,7 +17,7 @@ Tài liệu ghi lại các biến giao diện và thuộc tính dữ liệu đan
 | `tokenCsrf` | 21 | Mã chống giả mạo yêu cầu được gửi kèm các yêu cầu API cần bảo vệ. |
 | `cheDoTaiKhoan` | 22 | Chế độ hiện tại của hộp thoại tài khoản. |
 | `maSanPhamDangSua` | 23 | Mã sản phẩm đang được chỉnh sửa trong khu vực quản trị. |
-| `soSanPhamMoiTrang` | 25 | Số sản phẩm tối đa hiển thị trên mỗi trang. |
+| `soSanPhamMoiTrang` | 34 | Số sản phẩm tối đa hiển thị trên mỗi trang (8 sản phẩm). |
 | `trangSanPham` | 26 | Số thứ tự trang sản phẩm đang hiển thị. |
 | `oHopChiTietSanPham` | 53 | Phần tử hộp thoại hiển thị chi tiết sản phẩm. |
 

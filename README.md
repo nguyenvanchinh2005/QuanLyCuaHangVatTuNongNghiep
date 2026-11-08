@@ -90,7 +90,7 @@ php -S 127.0.0.1:8000 -t public server/router.php
 - **Admin:** có toàn bộ quyền quản trị và CRUD sản phẩm/tồn kho.
 - Giao diện được tách theo trang: `public/index.html` cho cửa hàng, `public/pages/nhan-vien.html` cho nhân viên và `public/pages/admin.html` cho admin. Sau đăng nhập, nhân viên/admin vào đúng trang quản trị theo vai trò; từ đó có thể chuyển sang cửa hàng và quay lại quản trị bằng điều hướng. Trang cửa hàng giữ nguyên khi tải lại, không tự chuyển nhân viên/admin về trang quản trị.
 - Tên tài khoản (3–32 ký tự chữ không dấu, số, `.`, `_`, `-`) và mật khẩu dùng để đăng nhập. Không yêu cầu email hoặc số điện thoại.
-- Danh sách cửa hàng hiển thị tối đa 20 sản phẩm mỗi trang; bộ lọc và tìm kiếm cũng được phân trang.
+- Danh sách cửa hàng hiển thị tối đa 8 sản phẩm mỗi trang; bộ lọc và tìm kiếm cũng được phân trang.
 - Đăng ký công khai chỉ tạo vai trò khách hàng. Tạo tài khoản nhân viên/admin bằng CLI; mật khẩu được đọc từ stdin, không truyền trong tham số lệnh. Ví dụ PowerShell:
 
   ```powershell
