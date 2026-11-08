@@ -31,9 +31,9 @@ final class ProductController
 
     public function hienThiHinhAnh(string $maSP): void
     {
-        $hinhAnh = $this->products->timHinhAnhTheoMa($maSP);
+        $duongDanTuDatabase = $this->products->timHinhAnhTheoMa($maSP);
 
-        if ($hinhAnh === null) {
+        if ($duongDanTuDatabase === null) {
             JsonResponse::gui([
                 'error' => [
                     'code' => 'image_not_found',
@@ -41,6 +41,30 @@ final class ProductController
                 ],
             ], 404);
             return;
+        }
+
+        $thuMucDuAn = dirname(__DIR__, 3);
+        $thuMucAnh = realpath($thuMucDuAn . DIRECTORY_SEPARATOR . 'images');
+        $duongDanAnh = realpath(
+            $thuMucDuAn . DIRECTORY_SEPARATOR
+            . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $duongDanTuDatabase)
+        );
+
+        if ($thuMucAnh === false || $duongDanAnh === false
+            || !str_starts_with($duongDanAnh, $thuMucAnh . DIRECTORY_SEPARATOR)
+            || !is_file($duongDanAnh) || !is_readable($duongDanAnh)) {
+            JsonResponse::gui([
+                'error' => [
+                    'code' => 'image_file_not_found',
+                    'message' => 'Không tìm thấy tệp hình ảnh sản phẩm.',
+                ],
+            ], 404);
+            return;
+        }
+
+        $hinhAnh = file_get_contents($duongDanAnh);
+        if ($hinhAnh === false) {
+            throw new RuntimeException('Không thể đọc tệp hình ảnh sản phẩm.');
         }
 
         $loaiAnh = $this->xacDinhLoaiHinhAnh($hinhAnh);
@@ -74,6 +98,15 @@ final class ProductController
             return;
         }
 
+        $maNCC = $this->products->timMaNhaCungCapTheoTen($sanPham['TenNCC']);
+        if ($maNCC === null) {
+            JsonResponse::gui([
+                'error' => ['code' => 'supplier_not_found', 'message' => 'Nhà cung cấp không tồn tại trong cơ sở dữ liệu.'],
+            ], 422);
+            return;
+        }
+        $sanPham['MaNCC'] = $maNCC;
+
         $this->products->tao($sanPham);
         JsonResponse::gui($this->products->timTheoMa($sanPham['MaSP']), 201);
     }
@@ -84,6 +117,15 @@ final class ProductController
         if ($sanPham === null) {
             return;
         }
+
+        $maNCC = $this->products->timMaNhaCungCapTheoTen($sanPham['TenNCC']);
+        if ($maNCC === null) {
+            JsonResponse::gui([
+                'error' => ['code' => 'supplier_not_found', 'message' => 'Nhà cung cấp không tồn tại trong cơ sở dữ liệu.'],
+            ], 422);
+            return;
+        }
+        $sanPham['MaNCC'] = $maNCC;
 
         if (!$this->products->capNhat($maSP, $sanPham)) {
             JsonResponse::gui([
@@ -143,10 +185,10 @@ final class ProductController
         $giaBan = filter_var($duLieu['Giaban'] ?? null, FILTER_VALIDATE_INT);
         $soLuong = filter_var($duLieu['Soluong'] ?? null, FILTER_VALIDATE_INT);
 
-        if ($maSP === '' || strlen($maSP) > 32
-            || $tenSP === '' || $doDaiTenSP === false || $doDaiTenSP > 255
-            || $tenNCC === '' || $doDaiTenNCC === false || $doDaiTenNCC > 255
-            || $donViTinh === '' || $doDaiDonViTinh === false || $doDaiDonViTinh > 50
+        if ($maSP === '' || strlen($maSP) > 6
+            || $tenSP === '' || $doDaiTenSP === false || $doDaiTenSP > 200
+            || $tenNCC === '' || $doDaiTenNCC === false || $doDaiTenNCC > 100
+            || $donViTinh === '' || $doDaiDonViTinh === false || $doDaiDonViTinh > 20
             || $giaBan === false || $giaBan < 0
             || $soLuong === false || $soLuong < 0) {
             JsonResponse::gui([

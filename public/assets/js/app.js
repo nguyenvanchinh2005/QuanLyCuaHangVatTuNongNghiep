@@ -415,10 +415,10 @@ function veFormSanPham() {
   const sanPham = duLieuLuu.sanPham.find(mon => String(mon.MaSP) === maSanPhamDangSua);
   const dangSua = sanPham !== undefined;
   return `<form id="formSanPham" class="form-quan-tri form-san-pham">
-    <div class="form-nhom"><label for="maSanPham">Mã sản phẩm</label><input id="maSanPham" name="MaSP" required maxlength="32" value="${thoatHTML(sanPham?.MaSP || "")}" ${dangSua ? "readonly" : ""} placeholder="VD: SP001"></div>
-    <div class="form-nhom"><label for="tenSanPham">Tên sản phẩm</label><input id="tenSanPham" name="TenSP" required maxlength="255" value="${thoatHTML(sanPham?.TenSP || "")}" placeholder="Tên sản phẩm"></div>
-    <div class="form-nhom"><label for="nhaCungCap">Nhà cung cấp</label><input id="nhaCungCap" name="TenNCC" required maxlength="255" value="${thoatHTML(sanPham?.TenNCC || "")}" placeholder="Nhà cung cấp"></div>
-    <div class="form-nhom"><label for="donViTinh">Đơn vị tính</label><input id="donViTinh" name="DviTinh" required maxlength="50" value="${thoatHTML(sanPham?.DviTinh || "")}" placeholder="Chai, kg, gói..."></div>
+    <div class="form-nhom"><label for="maSanPham">Mã sản phẩm</label><input id="maSanPham" name="MaSP" required maxlength="6" value="${thoatHTML(sanPham?.MaSP || "")}" ${dangSua ? "readonly" : ""} placeholder="VD: SP001"></div>
+    <div class="form-nhom"><label for="tenSanPham">Tên sản phẩm</label><input id="tenSanPham" name="TenSP" required maxlength="200" value="${thoatHTML(sanPham?.TenSP || "")}" placeholder="Tên sản phẩm"></div>
+    <div class="form-nhom"><label for="nhaCungCap">Nhà cung cấp</label><input id="nhaCungCap" name="TenNCC" required maxlength="100" value="${thoatHTML(sanPham?.TenNCC || "")}" placeholder="Nhà cung cấp có trong hệ thống"></div>
+    <div class="form-nhom"><label for="donViTinh">Đơn vị tính</label><input id="donViTinh" name="DviTinh" required maxlength="20" value="${thoatHTML(sanPham?.DviTinh || "")}" placeholder="Chai, kg, gói..."></div>
     <div class="form-nhom"><label for="giaSanPham">Giá bán (VND)</label><input id="giaSanPham" name="Giaban" type="number" min="0" step="1" required value="${sanPham?.Giaban ?? ""}"></div>
     <div class="form-nhom"><label for="tonKhoSanPham">Tồn kho</label><input id="tonKhoSanPham" name="Soluong" type="number" min="0" step="1" required value="${sanPham?.Soluong ?? ""}"></div>
     <div class="hang-nut"><button class="nut-chinh" type="submit">${taoIcon("save")} ${dangSua ? "Lưu thay đổi" : "Tạo sản phẩm"}</button><button class="nut-phu" type="button" id="nutHuySanPham">Hủy</button></div>

@@ -80,7 +80,7 @@ final class Auth
     public static function taoThongTinNguoiDung(array $nguoiDung): array
     {
         return [
-            'id' => (int) $nguoiDung['id'],
+            'id' => (string) $nguoiDung['id'],
             'tenTaiKhoan' => (string) $nguoiDung['ten_tai_khoan'],
             'ten' => (string) $nguoiDung['ho_ten'],
             'vaiTro' => self::chuanHoaVaiTro((string) $nguoiDung['vai_tro']),

@@ -10,12 +10,9 @@ final class AdminData
     public function danhSachDonHang(): array
     {
         $cauTruyVan = $this->database->query(
-            "SELECT h.MaHD, h.Ngaylap,
-                    COALESCE(k.TenKH, h.MaKH, 'Khách lẻ') AS khach,
-                    COALESCE(
-                        SUM(COALESCE(c.TongHD, c.SlBan * c.GiaBan - COALESCE(c.Giamgia, 0))),
-                        0
-                    ) AS tong
+            "            SELECT h.MaHD, h.Ngaylap,
+                   COALESCE(k.TenKH, h.MaKH, 'Khách lẻ') AS khach,
+                   COALESCE(SUM(c.ThanhTien), 0) AS tong
              FROM hoadon h
              LEFT JOIN khachhang k ON k.MaKH = h.MaKH
              LEFT JOIN cthoadon c ON c.MaHD = h.MaHD

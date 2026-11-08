@@ -10,10 +10,13 @@ final class Product
     public function danhSach(): array
     {
         $cauTruyVan = $this->database->query(
-            'SELECT MaSP, TenSP, Giaban, Soluong, TenNCC, DviTinh,
-                    (HinhAnh IS NOT NULL AND OCTET_LENGTH(HinhAnh) > 0) AS CoHinhAnh
-             FROM sanpham
-             ORDER BY TenSP, MaSP'
+            'SELECT s.MaSP, s.TenSP, s.Giaban, s.Soluong, n.TenNCC, s.DviTinh,
+                    EXISTS (
+                        SELECT 1 FROM hinhanhsanpham i WHERE i.MaSP = s.MaSP
+                    ) AS CoHinhAnh
+             FROM sanpham s
+             LEFT JOIN ncc n ON n.MaNCC = s.MaNCC
+             ORDER BY s.TenSP, s.MaSP'
         );
 
         return array_map([$this, 'chuanHoaSanPham'], $cauTruyVan->fetchAll());
@@ -22,10 +25,13 @@ final class Product
     public function timTheoMa(string $maSP): ?array
     {
         $cauTruyVan = $this->database->prepare(
-            'SELECT MaSP, TenSP, Giaban, Soluong, TenNCC, DviTinh,
-                    (HinhAnh IS NOT NULL AND OCTET_LENGTH(HinhAnh) > 0) AS CoHinhAnh
-             FROM sanpham
-             WHERE MaSP = :maSP
+            'SELECT s.MaSP, s.TenSP, s.Giaban, s.Soluong, n.TenNCC, s.DviTinh,
+                    EXISTS (
+                        SELECT 1 FROM hinhanhsanpham i WHERE i.MaSP = s.MaSP
+                    ) AS CoHinhAnh
+             FROM sanpham s
+             LEFT JOIN ncc n ON n.MaNCC = s.MaNCC
+             WHERE s.MaSP = :maSP
              LIMIT 1'
         );
         $cauTruyVan->execute(['maSP' => $maSP]);
@@ -37,22 +43,37 @@ final class Product
     public function timHinhAnhTheoMa(string $maSP): ?string
     {
         $cauTruyVan = $this->database->prepare(
-            'SELECT HinhAnh
-             FROM sanpham
+            'SELECT DuongDan
+             FROM hinhanhsanpham
              WHERE MaSP = :maSP
+             ORDER BY AnhChinh DESC, ThuTu ASC, MaAnh ASC
              LIMIT 1'
         );
         $cauTruyVan->execute(['maSP' => $maSP]);
-        $hinhAnh = $cauTruyVan->fetchColumn();
+        $duongDan = $cauTruyVan->fetchColumn();
 
-        return $hinhAnh === false || $hinhAnh === null || $hinhAnh === '' ? null : $hinhAnh;
+        return $duongDan === false || $duongDan === null || $duongDan === '' ? null : $duongDan;
+    }
+
+    public function timMaNhaCungCapTheoTen(string $tenNCC): ?string
+    {
+        $cauTruyVan = $this->database->prepare(
+            'SELECT MaNCC
+             FROM ncc
+             WHERE TenNCC = :tenNCC
+             LIMIT 1'
+        );
+        $cauTruyVan->execute(['tenNCC' => $tenNCC]);
+        $maNCC = $cauTruyVan->fetchColumn();
+
+        return $maNCC === false ? null : (string) $maNCC;
     }
 
     public function tao(array $sanPham): void
     {
         $cauTruyVan = $this->database->prepare(
-            'INSERT INTO sanpham (MaSP, TenSP, Giaban, Soluong, TenNCC, DviTinh)
-             VALUES (:maSP, :tenSP, :giaBan, :soLuong, :tenNCC, :donViTinh)'
+            'INSERT INTO sanpham (MaSP, TenSP, MaNCC, DviTinh, Giaban, Soluong)
+             VALUES (:maSP, :tenSP, :maNCC, :donViTinh, :giaBan, :soLuong)'
         );
         $cauTruyVan->execute($this->thamSoSanPham($sanPham));
     }
@@ -64,8 +85,8 @@ final class Product
         $thamSo['maSP'] = $maSP;
         $cauTruyVan = $this->database->prepare(
             'UPDATE sanpham
-             SET TenSP = :tenSP, Giaban = :giaBan, Soluong = :soLuong,
-                 TenNCC = :tenNCC, DviTinh = :donViTinh
+             SET TenSP = :tenSP, MaNCC = :maNCC, DviTinh = :donViTinh,
+                 Giaban = :giaBan, Soluong = :soLuong
              WHERE MaSP = :maSP'
         );
         $cauTruyVan->execute($thamSo);
@@ -86,10 +107,10 @@ final class Product
         return [
             'maSP' => $sanPham['MaSP'],
             'tenSP' => $sanPham['TenSP'],
+            'maNCC' => $sanPham['MaNCC'],
+            'donViTinh' => $sanPham['DviTinh'],
             'giaBan' => $sanPham['Giaban'],
             'soLuong' => $sanPham['Soluong'],
-            'tenNCC' => $sanPham['TenNCC'],
-            'donViTinh' => $sanPham['DviTinh'],
         ];
     }
 

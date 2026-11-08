@@ -29,9 +29,6 @@ Cửa hàng vật tư nông nghiệp dùng giao diện khách hàng làm trang m
 │   ├── DESIGN.md
 │   └── DANH_SACH_BIEN.md
 └── server/
-    ├── database/
-    │   ├── migration-taikhoan.sql
-    │   └── schema.sql
     ├── scripts/create-account.php
     ├── router.php
     ├── public/
@@ -70,16 +67,15 @@ php -m
 
 Đảm bảo danh sách module có `pdo_mysql`. Nếu chưa có, bật `extension=pdo_mysql` trong `php.ini` của bản PHP đang cài rồi mở terminal mới. PHP và MySQL là hai dịch vụ riêng: có thể chạy PHP độc lập, nhưng MySQL cần được cài và khởi động riêng (không nhất thiết qua XAMPP).
 
-1. Tạo database `quanlycuahangvattunongnghiep` và cài schema sản phẩm/hóa đơn hiện có.
-2. Với database mới, chạy `server/database/schema.sql`. Nếu bảng `taikhoan` chưa có, chạy `server/database/migration-taikhoan.sql` để tạo bảng tài khoản với các cột `MaTK`, `TenTK`, `MatKhau`, `VaiTro`. Tệp không xóa hoặc tự chuyển dữ liệu từ `nguoidung_web`.
-3. Sao chép `.env.example` thành `.env` nếu chưa có, rồi nhập host, cổng, tên database, user và password MySQL. Không commit `.env`.
-4. Từ thư mục gốc dự án, chạy:
+1. Đảm bảo MySQL đang chạy và database của ứng dụng đã có dữ liệu.
+2. Sao chép `.env.example` thành `.env` nếu chưa có, rồi nhập host, cổng, tên database, user và password MySQL. Không commit `.env`.
+3. Từ thư mục gốc dự án, chạy:
 
    ```powershell
    .\scripts\start-dev.ps1
    ```
 
-5. Mở `http://127.0.0.1:8000`. Dừng máy chủ bằng `Ctrl+C`.
+4. Mở `http://127.0.0.1:8000`. Dừng máy chủ bằng `Ctrl+C`.
 
 Có thể chạy trực tiếp thay vì dùng script:
 
@@ -115,14 +111,16 @@ API lưu mật khẩu tài khoản mới dưới dạng hash, dùng session cook
 
 - `GET /api/san-pham`: danh sách sản phẩm.
 - `GET /api/san-pham/{MaSP}`: chi tiết sản phẩm.
-- `GET /api/san-pham/{MaSP}/hinh-anh`: ảnh BLOB từ `HinhAnh`.
+- `GET /api/san-pham/{MaSP}/hinh-anh`: ảnh sản phẩm.
 - `GET /api/auth/session`, `POST /api/auth/login`, `POST /api/auth/register`, `POST /api/auth/logout`: phiên tài khoản. Đăng nhập và đăng ký nhận `tenTaiKhoan` và `matKhau`.
 - `GET /api/quan-tri`: dữ liệu quản trị, yêu cầu nhân viên hoặc admin.
 - `POST /api/san-pham`, `PUT /api/san-pham/{MaSP}`, `DELETE /api/san-pham/{MaSP}`: yêu cầu admin.
 
-Tạo sản phẩm cần nhập mã `MaSP`, tên, nhà cung cấp, đơn vị, giá và tồn kho. Danh mục vẫn được phân loại theo tên sản phẩm như trước; schema hiện chưa có cột danh mục. Checkout và hóa đơn trên giao diện vẫn là dữ liệu minh họa, chưa được lưu vào database.
+Tạo sản phẩm cần nhập mã, tên, nhà cung cấp, đơn vị, giá và tồn kho. Danh mục được phân loại theo tên sản phẩm. Checkout và hóa đơn trên giao diện vẫn là dữ liệu minh họa.
 
-`GET /api/quan-tri` đọc hóa đơn từ `hoadon`/`cthoadon`/`khachhang` và tài khoản từ `taikhoan`; mật khẩu không được gửi ra trình duyệt. Nếu API không kết nối được, kiểm tra `.env`, dịch vụ MySQL và PHP đã bật `pdo_mysql`. Chi tiết kết nối được ghi vào PHP error log; phản hồi API không tiết lộ thông tin cấu hình.
+Giữ nguyên thư mục `images/` khi triển khai để hiển thị ảnh sản phẩm.
+
+Nếu API không kết nối được, kiểm tra `.env`, dịch vụ MySQL và PHP đã bật `pdo_mysql`. Chi tiết kết nối được ghi vào PHP error log; phản hồi API không tiết lộ thông tin cấu hình.
 
 ## Lưu ý
 

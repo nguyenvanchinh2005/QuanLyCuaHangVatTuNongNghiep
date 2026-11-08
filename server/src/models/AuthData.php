@@ -34,18 +34,20 @@ final class AuthData
 
     public function taoTaiKhoan(string $tenTaiKhoan, string $matKhau, string $vaiTro): array
     {
+        $maTaiKhoan = 'TK' . strtoupper(bin2hex(random_bytes(4)));
         $cauTruyVan = $this->database->prepare(
-            'INSERT INTO taikhoan (TenTK, MatKhau, VaiTro)
-             VALUES (:tenTaiKhoan, :matKhau, :vaiTro)'
+            'INSERT INTO taikhoan (MaTK, TenTK, MatKhau, VaiTro)
+             VALUES (:maTaiKhoan, :tenTaiKhoan, :matKhau, :vaiTro)'
         );
         $cauTruyVan->execute([
+            'maTaiKhoan' => $maTaiKhoan,
             'tenTaiKhoan' => $tenTaiKhoan,
             'matKhau' => password_hash($matKhau, PASSWORD_DEFAULT),
             'vaiTro' => $vaiTro,
         ]);
 
         return [
-            'id' => (int) $this->database->lastInsertId(),
+            'id' => $maTaiKhoan,
             'ten_tai_khoan' => $tenTaiKhoan,
             'ho_ten' => $tenTaiKhoan,
             'vai_tro' => $vaiTro,
