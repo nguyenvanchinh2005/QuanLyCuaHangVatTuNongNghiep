@@ -1,2 +1,6 @@
 .env
 server/.env
+
+.env
+*.docx
+vendor/

@@ -47,7 +47,14 @@ if ($duongDan === '/api/auth/session') {
     return;
 }
 
-if (in_array($duongDan, ['/api/auth/login', '/api/auth/register', '/api/auth/logout'], true)) {
+if (in_array($duongDan, [
+    '/api/auth/login',
+    '/api/auth/register',
+    '/api/auth/logout',
+    '/api/auth/send-otp',
+    '/api/auth/reset-password',
+    '/api/auth/change-password',
+], true)) {
     if ($phuongThuc !== 'POST') {
         $tuChoiPhuongThuc('POST');
         return;
@@ -58,23 +65,25 @@ if (in_array($duongDan, ['/api/auth/login', '/api/auth/register', '/api/auth/log
         return;
     }
 
-    if ($duongDan === '/api/auth/login') {
-        if (!Auth::kiemTraTokenCsrf()) {
-            return;
-        }
-        $taoKetNoi = require __DIR__ . '/../config/database.php';
-        $dieuKhienAuth = new AuthController(new AuthData($taoKetNoi()));
-        $dieuKhienAuth->dangNhap($duLieu);
-    } elseif ($duongDan === '/api/auth/register') {
-        if (!Auth::kiemTraTokenCsrf()) {
-            return;
-        }
-        $taoKetNoi = require __DIR__ . '/../config/database.php';
-        $dieuKhienAuth = new AuthController(new AuthData($taoKetNoi()));
-        $dieuKhienAuth->dangKy($duLieu);
-    } else {
+    if ($duongDan === '/api/auth/logout') {
         (new AuthController())->dangXuat();
+        return;
     }
+
+    if (!Auth::kiemTraTokenCsrf()) {
+        return;
+    }
+
+    $taoKetNoi = require __DIR__ . '/../config/database.php';
+    $dieuKhienAuth = new AuthController(new AuthData($taoKetNoi()));
+
+    match ($duongDan) {
+        '/api/auth/send-otp' => $dieuKhienAuth->guiMaXacNhan($duLieu),
+        '/api/auth/login' => $dieuKhienAuth->dangNhap($duLieu),
+        '/api/auth/register' => $dieuKhienAuth->dangKy($duLieu),
+        '/api/auth/reset-password' => $dieuKhienAuth->quenMatKhau($duLieu),
+        '/api/auth/change-password' => $dieuKhienAuth->doiMatKhau($duLieu),
+    };
     return;
 }
 

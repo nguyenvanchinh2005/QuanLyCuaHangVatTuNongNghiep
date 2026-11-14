@@ -99,6 +99,12 @@
   <dialog id="hopBaiViet"><div class="hop-thoai" id="noiDungBaiViet"></div></dialog>
   <dialog id="hopChiTietSanPham" class="chi-tiet-san-pham"><div class="hop-thoai" id="noiDungChiTietSanPham"></div></dialog>
   <div class="thong-bao" id="thongBao" role="status" aria-live="polite"></div>
+<script>
+  window.onRecaptchaLoaded = function () {
+    window.dispatchEvent(new Event("recaptcha-ready"));
+  };
+</script>
+<div class="thong-bao" id="thongBao" role="status" aria-live="polite"></div>
   <script src="/assets/js/app.js" defer></script>
 </body>
 </html>
