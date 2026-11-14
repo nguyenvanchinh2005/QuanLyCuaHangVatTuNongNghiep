@@ -1,0 +1,9 @@
+# File môi trường
+.env
+server/.env
+
+# File Word
+*.docx
+
+# Thư mục AI
+/AI_NongNghiep/

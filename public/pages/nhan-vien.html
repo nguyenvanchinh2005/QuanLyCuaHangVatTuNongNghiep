@@ -1,0 +1,81 @@
+<!doctype html>
+<html class="dark" lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0c1512">
+  <meta name="description" content="Phân hệ quản lý Vườn Phố.">
+  <title>Quản lý cửa hàng - Vườn Phố</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            botanical: {
+              950: "#070d0b", 900: "#0c1512", 850: "#111c18", 800: "#162420",
+              700: "#1e332d", 600: "#28473e", emerald: "#10b981",
+              emeraldGlow: "#059669", amber: "#f59e0b", amberLight: "#fcd34d"
+            }
+          },
+          fontFamily: { sans: ['"Plus Jakarta Sans"', "sans-serif"] }
+        }
+      }
+    };
+  </script>
+  <style>
+    .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24; display: inline-block; vertical-align: middle; line-height: 1; }
+  </style>
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <link rel="stylesheet" href="../assets/css/app.css">
+</head>
+<body class="dark min-h-screen flex flex-col bg-[#0c1512] font-sans text-gray-200 antialiased" data-trang-vao="quan-tri" data-vai-tro-yeu-cau="nhan_vien">
+  <a class="bo-qua" href="#noi-dung">Bỏ qua điều hướng</a>
+  <header class="sticky top-0 z-50 border-b border-[#1f332c] bg-[#0c1512]/95 backdrop-blur-md">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="flex min-h-16 items-center justify-between gap-5">
+        <a class="group flex shrink-0 items-center gap-3 text-white no-underline" href="../index.html" aria-label="Vườn Phố">
+          <span class="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white shadow-lg shadow-emerald-900/40"><span class="material-symbols-outlined">local_florist</span></span>
+          <span><strong class="block text-base font-extrabold tracking-wider">VƯỜN PHỐ</strong><small class="block text-[13.2px] font-medium text-emerald-400">Vật tư nông nghiệp</small></span>
+        </a>
+        <nav class="hidden items-center gap-1 border-l border-[#1f332c] pl-4 text-sm md:flex" aria-label="Điều hướng nhanh">
+          <button class="flex items-center gap-2 rounded-lg border border-emerald-700/50 bg-emerald-900/40 px-3.5 py-2 font-semibold text-emerald-300" type="button" data-tab-quan-tri="tong-quan"><span class="material-symbols-outlined text-base">dashboard</span>KHU VỰC QUẢN LÝ</button>
+          <a class="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-300 no-underline transition-colors hover:bg-[#162420] hover:text-white" href="../index.html"><span class="material-symbols-outlined text-base">storefront</span>Về cửa hàng</a>
+          <button class="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-300 transition-colors hover:bg-[#162420] hover:text-white" type="button" id="nutTaiKhoan"><span class="material-symbols-outlined text-base">account_circle</span><span id="adminTaiKhoanTen">Tài khoản</span></button>
+        </nav>
+        <div class="flex items-center gap-2 border-l border-[#1f332c] pl-3">
+          <form id="formTimKiem" class="relative hidden w-56 lg:block" role="search">
+            <label class="sr-only" for="oTimKiem">Tìm sản phẩm</label>
+            <span class="material-symbols-outlined pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-base text-gray-400">search</span>
+            <input id="oTimKiem" class="w-full rounded-lg border border-[#223932] bg-[#14201c] py-2 pl-9 pr-3 text-xs text-gray-200 placeholder-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" type="search" placeholder="Tìm sản phẩm trên cửa hàng...">
+          </form>
+          <span id="adminVaiTro" class="hidden rounded-full border border-emerald-800/80 bg-emerald-950/70 px-2.5 py-1 text-[12px] font-bold uppercase tracking-wide text-emerald-300 sm:inline-flex">Nhân viên</span>
+          <span class="sr-only" id="soLuongGio">0</span>
+          <button class="rounded-lg px-2 py-2 text-xs font-semibold text-red-400 transition-colors hover:bg-red-950/30 hover:text-red-300" type="button" data-admin-logout aria-label="Đăng xuất"><span class="material-symbols-outlined text-lg">logout</span><span class="sr-only">Đăng xuất</span></button>
+        </div>
+      </div>
+    </div>
+  </header>
+  <main id="noi-dung" tabindex="-1" class="w-full flex-1"></main>
+  <footer class="mt-auto border-t border-[#162720] bg-[#07130e] py-6 text-xs text-gray-400">
+    <div class="mx-auto flex max-w-7xl flex-col justify-between gap-3 px-4 sm:flex-row sm:px-6 lg:px-8"><strong class="text-gray-200">VƯỜN PHỐ · QUẢN LÝ</strong><span>© 2026 Vườn Phố</span></div>
+  </footer>
+  <nav class="di-dong-nav" style="display:none" aria-label="Điều hướng quản lý"></nav>
+  <div class="lop-phu" id="lopPhu" aria-hidden="true"></div>
+  <aside class="ngan-keo" id="nganGio" aria-label="Giỏ hàng" aria-hidden="true">
+    <div class="dau-ngan-keo"><h2>Giỏ hàng <span id="nhanSoGio"></span></h2><button class="nut-dong" id="nutDongGio" aria-label="Đóng giỏ hàng"><i data-lucide="x"></i></button></div>
+    <div class="noi-dung-ngan-keo" id="noiDungGio"></div>
+  </aside>
+  <dialog id="hopTaiKhoan"><div class="hop-thoai"><div class="dau-hop"><div><h2 id="tieuDeTaiKhoan">Đăng nhập</h2><p id="moTaTaiKhoan">Đăng nhập để tiếp tục.</p></div><button class="nut-dong" data-dong-hop aria-label="Đóng"><i data-lucide="x"></i></button></div><form class="form-tai-khoan" id="formTaiKhoan"></form></div></dialog>
+  <dialog id="hopBaiViet"><div class="hop-thoai" id="noiDungBaiViet"></div></dialog>
+  <dialog id="hopChiTietSanPham" class="chi-tiet-san-pham"><div class="hop-thoai" id="noiDungChiTietSanPham"></div></dialog>
+  <dialog id="hopSanPham"><div class="hop-thoai st-product-dialog" id="noiDungHopSanPham"></div></dialog>
+  <div class="thong-bao" id="thongBao" role="status" aria-live="polite"></div>
+  <script src="../assets/js/app.js" defer></script>
+</body>
+</html>
