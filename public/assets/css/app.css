@@ -837,6 +837,306 @@
     main[data-trang="don-hang"] .the-don-hang { grid-template-columns: minmax(0, 1fr) auto; align-items: center; padding: 20px 22px; border-left: 2px solid #267346; }
     main[data-trang="don-hang"] .the-don-hang h3 { font-size: 18px; }
     main[data-trang="don-hang"] .the-don-hang p { max-width: 78ch; font-size: 15.6px; }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        color-scheme: light;
+        --la-dam: #176b42;
+        --la-sang: #e9f2e8;
+        --la-nhat: #f5f8f1;
+        --cam: #a94d13;
+        --vang: #f5c85b;
+        --muc: #252b25;
+        --phu: #58645c;
+        --vien: #d6dfd5;
+        --trang: #fff;
+        --do: #a83227;
+        --nen: #f6f7f3;
+        --bong: 0 14px 38px rgba(27, 55, 35, .09);
+      }
+
+      body {
+        background: var(--nen) !important;
+        color: var(--muc);
+      }
+
+      html.dark body.dark { background-color: var(--nen) !important; }
+
+      ::selection { background: #cbe4cc; color: #173f2b; }
+      ::placeholder { color: #68736b; }
+
+      html.dark [class*="bg-[#"] {
+        background-color: var(--trang) !important;
+      }
+
+      html.dark [class*="border-[#"] {
+        border-color: var(--vien) !important;
+      }
+
+      html.dark [class*="bg-emerald-950"],
+      html.dark [class*="bg-emerald-900"],
+      html.dark [class*="bg-red-950"] {
+        background-color: #e9f2e8 !important;
+      }
+
+      html.dark [class*="bg-amber-950"] {
+        background-color: #fff3dc !important;
+      }
+
+      html.dark [class*="border-emerald-800"],
+      html.dark [class*="border-emerald-700"] {
+        border-color: #c6ddca !important;
+      }
+
+      html.dark [class*="border-amber-"],
+      html.dark [class*="border-red-"] {
+        border-color: #ead9c5 !important;
+      }
+
+      html.dark [class~="text-gray-100"],
+      html.dark [class~="text-gray-200"],
+      html.dark [class~="text-gray-300"],
+      html.dark [class~="text-gray-400"],
+      html.dark [class~="text-gray-500"],
+      html.dark [class~="text-gray-600"],
+      html.dark [class~="text-gray-950"],
+      html.dark [class~="text-emerald-50"],
+      html.dark [class~="text-emerald-100"],
+      html.dark [class~="text-emerald-200"] {
+        color: #252b25 !important;
+      }
+
+      html.dark [class~="text-emerald-300"],
+      html.dark [class~="text-emerald-400"] {
+        color: #176b42 !important;
+      }
+
+      html.dark [class~="text-amber-300"],
+      html.dark [class~="text-amber-400"] {
+        color: #8a451b !important;
+      }
+
+      html.dark [class~="text-red-300"],
+      html.dark [class~="text-red-400"] {
+        color: #a83227 !important;
+      }
+
+      html.dark [class~="text-white"]:not([class*="bg-emerald-"]):not([class*="bg-amber-"]):not([class*="bg-red-"]):not([class*="bg-gradient"]) {
+        color: #252b25 !important;
+      }
+
+      html.dark [class*="bg-emerald-"] [class~="text-white"],
+      html.dark [class*="bg-amber-"] [class~="text-white"],
+      html.dark [class*="bg-red-"] [class~="text-white"],
+      html.dark [class*="bg-gradient"] [class~="text-white"] {
+        color: #fff !important;
+      }
+
+      .cum-dau-trang,
+      .dau-trang,
+      .dieu-huong,
+      .chan-trang,
+      .bo-loc-danh-muc,
+      .ds-danh-muc-cha,
+      .menu-danh-muc,
+      .khung-noi-dung,
+      .the-thong-ke,
+      .the-don-hang,
+      .the-san-pham,
+      .the-danh-muc,
+      .bai-viet,
+      .bang-cuon,
+      .ngan-keo,
+      .noi-dung-ngan-keo,
+      dialog {
+        background-color: var(--trang);
+        color: var(--muc);
+      }
+
+      .cum-dau-trang,
+      .chan-trang,
+      .dieu-huong,
+      .bo-loc-danh-muc,
+      .khung-noi-dung,
+      .the-thong-ke,
+      .the-don-hang,
+      .the-san-pham,
+      .the-danh-muc,
+      .bai-viet,
+      .bang-cuon,
+      .ngan-keo,
+      dialog {
+        border-color: var(--vien);
+      }
+
+      .thanh-top,
+      .dau-nav-danh-muc {
+        background-color: #176b42;
+        color: #fff;
+      }
+
+      .thuong-hieu,
+      .nut-dang-nhap,
+      .nut-phu,
+      .nut-nho,
+      .nut-icon,
+      .nut-mo-danh-muc,
+      .nut-trang-san-pham,
+      .nut-xem-chi-tiet,
+      .nut-tab,
+      .nut-di-dong,
+      .loi-ich strong,
+      .san-pham-noi-dung h3,
+      .dau-trang-trang h1,
+      .tieu-de-khu h2,
+      .khung-noi-dung h2,
+      .dau-hop h2,
+      .chi-tiet-noi-dung h2,
+      .o-rong strong,
+      table {
+        color: var(--muc);
+      }
+
+      .thuong-hieu small,
+      .nut-van-chuyen small,
+      .loi-ich small,
+      .tieu-de-khu p,
+      .san-pham-loai,
+      .san-pham-danh-gia,
+      .san-pham-gia small,
+      .phan-trang-san-pham,
+      .duong-dan,
+      .form-nhom small,
+      .dau-hop p,
+      .chi-tiet-noi-dung p,
+      main:not(.trang-cua-hang) .duong-dan,
+      main:not(.trang-cua-hang) .khung-noi-dung p {
+        color: #58645c;
+      }
+
+      .nut-icon,
+      .nut-phu,
+      .nut-nho,
+      .nut-mo-danh-muc,
+      .nut-trang-san-pham,
+      .sap-xep-san-pham select,
+      .nut-dong,
+      .ngan-keo,
+      dialog,
+      input,
+      select,
+      textarea,
+      .form-o,
+      .nut-so-luong {
+        border-color: var(--vien);
+        background-color: var(--trang);
+        color: var(--muc);
+      }
+
+      .banner-chinh,
+      .banner-noi-dung {
+        border-color: #dce8d9;
+        background-color: #e9f2e8;
+        color: #252b25;
+      }
+
+      .banner-noi-dung h1 { color: #173f2b; }
+      .banner-noi-dung p { color: #45594b; }
+      .banner-anh {
+        background-image: linear-gradient(90deg, #e9f2e8 0%, rgba(233, 242, 232, .8) 12%, rgba(233, 242, 232, .18) 68%, rgba(233, 242, 232, .04) 100%), url("/api/san-pham/SP001/hinh-anh");
+      }
+      .banner-nhan { border: 1px solid var(--vien); background: rgba(255, 255, 255, .95); color: #176b42; }
+      .tieu-de-danh-muc { background: #e9f2e8; color: #252b25; }
+      .nut-danh-muc-cha,
+      .nut-danh-muc-con { color: #252b25; border-color: var(--vien); }
+      .nut-danh-muc-cha:hover,
+      .nut-danh-muc-cha.dang-chon,
+      .nut-danh-muc-con:hover,
+      .nut-danh-muc-con.dang-chon,
+      .nut-mo-danh-muc:hover,
+      .nut-mo-danh-muc[aria-expanded="true"],
+      .nut-tab:hover,
+      .nut-tab.dang-chon,
+      .nut-trang-san-pham:hover:not(:disabled),
+      .nut-trang-san-pham.dang-chon {
+        background-color: #e9f2e8;
+        color: #176b42;
+      }
+
+      .thanh-loi-ich,
+      .khung-noi-dung,
+      .the-thong-ke,
+      .the-don-hang,
+      .the-san-pham,
+      .the-danh-muc,
+      .bai-viet,
+      .bang-cuon,
+      .o-rong {
+        border-color: var(--vien);
+        background-color: var(--trang);
+      }
+
+      .loi-ich,
+      th,
+      .nhan-trang-thai {
+        border-color: var(--vien);
+      }
+
+      th,
+      .nhan-trang-thai {
+        background-color: #e9f2e8;
+        color: #176b42;
+      }
+
+      .nhan-trang-thai.cho-xu-ly { background: #fff3dc; color: #8a451b; }
+      .nhan-trang-thai.tam-khoa { background: #fce8e6; color: #a83227; }
+      th, td { border-color: var(--vien); }
+      tbody tr:hover { background: #f5f8f1; }
+      .form-nhom label { color: var(--muc); }
+      .form-nhom input,
+      .form-nhom select,
+      .form-nhom textarea,
+      input,
+      select,
+      textarea,
+      .form-o,
+      .nut-so-luong {
+        background-color: #fff;
+        color: var(--muc);
+      }
+
+      .nut-so-luong button { color: var(--muc); }
+      .nut-dong { background: #fff; color: var(--muc); }
+      .ghi-chu { border-color: #ead9c5; background: #fff3dc; color: #63450e; }
+      .thong-bao { border-color: var(--vien); background: #fff; color: var(--muc); }
+      .di-dong-nav { background: rgba(255, 255, 255, .97); border-color: var(--vien); }
+      .nut-di-dong.dang-chon,
+      .nut-xem-tat-ca,
+      .duong-dan a { color: #176b42; }
+      .nut-chinh { border-color: #176b42; background: #176b42; color: #fff; }
+      .nut-chinh:hover { border-color: #0d5734; background: #0d5734; color: #fff; }
+      .san-pham-gia,
+      .tong-tien strong,
+      .the-thong-ke strong,
+      .the-don-hang strong { color: #176b42; }
+      .nut-xoa { color: #a83227; }
+      .bo-qua:focus { background: #fff; color: var(--muc); }
+      main:not(.trang-cua-hang) .dau-trang-trang { border-color: var(--vien); }
+      main:not(.trang-cua-hang) .khung-noi-dung h2 { color: var(--muc); }
+      main[data-trang="cam-nang"] .khung-tai-anh { border-color: #a8c3ad; background: linear-gradient(145deg, #f5f8f1, #e9f2e8); }
+
+      @media (max-width: 640px) {
+        .thanh-top,
+        .dau-trang,
+        .dieu-huong { background-color: #fff; }
+        .dieu-huong-ben-trong,
+        .loi-ich:nth-child(-n+2) { border-color: var(--vien); }
+        .menu-danh-muc { background-color: #fff; }
+        .banner-anh {
+          background-image: linear-gradient(0deg, rgba(233, 242, 232, .12), rgba(233, 242, 232, .12)), url("/api/san-pham/SP001/hinh-anh");
+        }
+      }
+    }
     main[data-trang="don-hang"] .the-don-hang > strong { font-size: 21.6px; }
     main[data-trang="don-hang"] .o-rong { padding: 54px 24px; border-radius: 9px; }
 
