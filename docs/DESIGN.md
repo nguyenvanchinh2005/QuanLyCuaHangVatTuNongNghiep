@@ -75,6 +75,10 @@ Bảng màu kết hợp sắc xanh cây với các bề mặt xanh lá nhạt v�
 - **Trắng** (#ffffff): Thẻ sản phẩm, biểu mẫu và ngăn trượt.
 - **Cảnh báo** (#bd4c3e): Trạng thái lỗi và thao tác xóa.
 
+## Chủ đề sáng/tối
+
+Cửa hàng và các trang quản trị tự theo chế độ màu của trình duyệt qua `prefers-color-scheme`, đồng thời cập nhật màu thanh trình duyệt khi chế độ thay đổi. Chế độ sáng dùng bảng màu ở trên; chế độ tối dùng nền xanh đậm (#0c1512), bề mặt (#141d1a) và chữ sáng (#dbe5df).
+
 ## Kiểu chữ
 
 - **Phông chữ tiêu đề lớn:** Figtree, sans-serif

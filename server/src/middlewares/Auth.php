@@ -77,13 +77,15 @@ final class Auth
         return false;
     }
 
-    public static function taoThongTinNguoiDung(array $nguoiDung): array
+    public static function taoThongTinNguoiDung(array $taiKhoan): array
     {
         return [
-            'id' => (string) $nguoiDung['id'],
-            'tenTaiKhoan' => (string) $nguoiDung['ten_tai_khoan'],
-            'ten' => (string) $nguoiDung['ho_ten'],
-            'vaiTro' => self::chuanHoaVaiTro((string) $nguoiDung['vai_tro']),
+            'id' => (string) ($taiKhoan['id'] ?? ''),
+            'ten' => (string) ($taiKhoan['ho_ten'] ?? $taiKhoan['ten_tai_khoan'] ?? ''),
+            'tenTaiKhoan' => (string) ($taiKhoan['ten_tai_khoan'] ?? ''),
+            'vaiTro' => (string) ($taiKhoan['vai_tro'] ?? 'khach_hang'),
+            'email' => (string) ($taiKhoan['email'] ?? ''),
+            'emailDaXacMinh' => (bool) ($taiKhoan['email_da_xac_minh'] ?? false),
         ];
     }
 
