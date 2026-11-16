@@ -371,6 +371,23 @@ insert  into `tonkho`(`Namthang`,`MaSP`,`SlBandau`,`SlNhap`,`SlBan`,`SlConlai`) 
 ('2026-10-01','SP002',50,150,1,199),
 ('2026-10-01','SP003',20,80,3,97);
 
+/*Table structure for table `xacnhan_email` */
+
+DROP TABLE IF EXISTS `xacnhan_email`;
+
+CREATE TABLE `xacnhan_email` (
+  `Email` varchar(255) NOT NULL,
+  `token_hash` char(64) NOT NULL,
+  `tao_luc` datetime NOT NULL,
+  `het_han_luc` datetime NOT NULL,
+  PRIMARY KEY (`Email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*Data for the table `xacnhan_email` */
+
+insert  into `xacnhan_email`(`Email`,`token_hash`,`tao_luc`,`het_han_luc`) values 
+('chinhxipo01@gmail.com','8897da5f9922635f018933b784e5cf7fbfc0e5a48841fb2fd7ed1339fca0848a','2026-11-16 17:48:33','2026-11-16 17:58:33');
+
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
