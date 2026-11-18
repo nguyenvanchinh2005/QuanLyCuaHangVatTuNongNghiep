@@ -1,4 +1,97 @@
 const KHOA_YEU_THICH = "vuon_pho_yeu_thich_v1";
+const KHOA_TAI_KHOAN_GAN_NHAT = "vuon_pho_tai_khoan_gan_nhat_v1";
+const TIEN_TO_KHOA_GIO_HANG = "vuon_pho_gio_hang_v1_";
+let duLieuLuu = null;
+
+// ============================================================================
+// LUỒNG QUẢN LÝ LƯU TRỮ GIỎ HÀNG THEO TÀI KHOẢN (KHÔNG DÙNG SQL)
+// ============================================================================
+
+// 1. Xác định mã định danh tài khoản đang đăng nhập hoặc tài khoản gần nhất
+function layDinhDanhTaiKhoanHienTai() {
+  if (duLieuLuu && duLieuLuu.taiKhoan) {
+    return duLieuLuu.taiKhoan.id || duLieuLuu.taiKhoan.tenTaiKhoan || "";
+  }
+  try {
+    return localStorage.getItem(KHOA_TAI_KHOAN_GAN_NHAT) || "";
+  } catch {
+    return "";
+  }
+}
+
+// 2. Tạo khóa định danh riêng cho từng tài khoản trong localStorage
+function layKhoaGioHangHienTai() {
+  const dinhDanh = layDinhDanhTaiKhoanHienTai();
+  return dinhDanh ? `${TIEN_TO_KHOA_GIO_HANG}${dinhDanh}` : `${TIEN_TO_KHOA_GIO_HANG}khach`;
+}
+
+// 3. Đọc dữ liệu giỏ hàng từ localStorage theo khóa tài khoản
+function docGioHangTuStorage(khoa = layKhoaGioHangHienTai()) {
+  try {
+    const raw = localStorage.getItem(khoa);
+    if (!raw) return [];
+    const duLieu = JSON.parse(raw);
+    return Array.isArray(duLieu)
+      ? duLieu.filter(
+          (mon) =>
+            mon &&
+            typeof mon.MaSP === "string" &&
+            Number(mon.soLuong) > 0,
+        )
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+// 4. Lưu dữ liệu giỏ hàng hiện tại vào localStorage theo tài khoản
+function luuGioHangVaoStorage() {
+  try {
+    const khoa = layKhoaGioHangHienTai();
+    localStorage.setItem(khoa, JSON.stringify(duLieuLuu.gioHang || []));
+  } catch {
+    // Bỏ qua nếu localStorage bị đầy hoặc bị trình duyệt chặn
+  }
+}
+
+// 5. Đồng bộ giỏ hàng khi người dùng đăng nhập (gộp giỏ hàng khách vào tài khoản)
+function dongBoGioHangKhiDangNhap(taiKhoanMoi) {
+  const khoaKhach = `${TIEN_TO_KHOA_GIO_HANG}khach`;
+  const gioHangKhach = docGioHangTuStorage(khoaKhach);
+
+  const dinhDanhMoi = taiKhoanMoi?.id || taiKhoanMoi?.tenTaiKhoan || "";
+  const khoaTaiKhoan = dinhDanhMoi
+    ? `${TIEN_TO_KHOA_GIO_HANG}${dinhDanhMoi}`
+    : khoaKhach;
+  const gioHangTaiKhoan = docGioHangTuStorage(khoaTaiKhoan);
+
+  // Nếu khách có chọn hàng trước khi đăng nhập, gộp hàng đó vào tài khoản
+  if (gioHangKhach.length > 0 && khoaTaiKhoan !== khoaKhach) {
+    gioHangKhach.forEach((monKhach) => {
+      const monDaCo = gioHangTaiKhoan.find((m) => m.MaSP === monKhach.MaSP);
+      if (monDaCo) {
+        monDaCo.soLuong += monKhach.soLuong;
+      } else {
+        gioHangTaiKhoan.push(monKhach);
+      }
+    });
+    // Xóa giỏ hàng khách tạm thời sau khi đã gộp
+    try {
+      localStorage.removeItem(khoaKhach);
+    } catch {}
+  }
+
+  duLieuLuu.gioHang = gioHangTaiKhoan;
+  luuGioHangVaoStorage();
+  capNhatHienThiGioHang();
+}
+
+// 6. Đồng bộ giỏ hàng khi người dùng đăng xuất (chuyển về giỏ hàng khách)
+function dongBoGioHangKhiDangXuat() {
+  const khoaKhach = `${TIEN_TO_KHOA_GIO_HANG}khach`;
+  duLieuLuu.gioHang = docGioHangTuStorage(khoaKhach);
+  capNhatHienThiGioHang();
+}
 
 function docDanhSachYeuThich() {
   try {
@@ -13,18 +106,25 @@ const duLieuMacDinh = {
   sanPham: [],
   benhCay: [],
   nguoiDung: [],
-  gioHang: [],
+  gioHang: docGioHangTuStorage(),
   donHang: [],
   taiKhoan: null,
   yeuThich: docDanhSachYeuThich(),
 };
-const duLieuLuu = structuredClone(duLieuMacDinh);
+duLieuLuu = structuredClone(duLieuMacDinh);
 const duLieuQuanTri = { donHang: [], taiKhoan: [] };
 let dangTaiSanPham = true;
 let loiTaiSanPham = false;
 let dangTaiDuLieuQuanTri = false;
 let daTaiDuLieuQuanTri = false;
 let loiTaiDuLieuQuanTri = false;
+let dangTaiDonHang = false;
+let daTaiDonHang = false;
+let loiTaiDonHang = false;
+let dangTaoDonHang = false;
+let cacPhuongThucThanhToan = [
+  { ma: "cod", ten: "Thanh toán khi nhận hàng" },
+];
 const trangVao = document.body.dataset.trangVao || "cua-hang";
 const vaiTroYeuCau = document.body.dataset.vaiTroYeuCau || "";
 let trangHienTai = trangVao;
@@ -205,6 +305,7 @@ const oHopSanPham = document.getElementById("hopSanPham");
 
 function luuDuLieu() {
   capNhatSoGio();
+  luuGioHangVaoStorage();
   try {
     localStorage.setItem(KHOA_YEU_THICH, JSON.stringify(duLieuLuu.yeuThich));
   } catch {
@@ -292,12 +393,25 @@ async function goiApi(duongDan, tuyChon = {}) {
       throw new Error("Máy chủ trả về dữ liệu không hợp lệ.");
     }
   }
+  if (
+    phanHoi.status === 401 &&
+    vaiTroYeuCau &&
+    !duongDan.startsWith("/api/auth/")
+  ) {
+    window.location.replace("/index.html?dang-nhap=1");
+  }
   if (!phanHoi.ok) {
     throw new Error(
       duLieu?.error?.message || `Yêu cầu thất bại (HTTP ${phanHoi.status}).`,
     );
   }
   return duLieu;
+}
+
+// Chỉ phục vụ giao diện (ẩn/hiện nút). Máy chủ mới là nơi chặn quyền thật sự.
+function coQuyenUI(quyen) {
+  const danhSach = duLieuLuu.taiKhoan?.quyen;
+  return Array.isArray(danhSach) && danhSach.includes(quyen);
 }
 
 function capNhatGiaoDienTaiKhoan() {
@@ -428,7 +542,11 @@ function hienThongBao(noiDung) {
 
 async function taiSanPham() {
   try {
-    const sanPham = await goiApi("/api/san-pham");
+    const duongDanApi =
+      vaiTroYeuCau && coQuyenUI("quan_tri.xem")
+        ? "/api/san-pham?tatca=1"
+        : "/api/san-pham";
+    const sanPham = await goiApi(duongDanApi);
     if (!Array.isArray(sanPham))
       throw new TypeError("API không trả về danh sách sản phẩm hợp lệ.");
     duLieuLuu.sanPham = sanPham;
@@ -439,7 +557,8 @@ async function taiSanPham() {
     hienThongBao("Không thể kết nối dữ liệu sản phẩm.");
   } finally {
     dangTaiSanPham = false;
-    if (trangHienTai === "cua-hang" || trangHienTai === "quan-tri") veTrang();
+    if (trangHienTai === "cua-hang" || trangHienTai === "quan-tri" || trangHienTai === "gio-hang") veTrang();
+    veGioHang();
   }
 }
 
@@ -466,6 +585,71 @@ async function taiDuLieuQuanTri() {
       veQuanTri();
       veIcon();
     }
+  }
+}
+
+async function taiDonHang(lamMoi = false) {
+  if (
+    dangTaiDonHang ||
+    (!lamMoi && daTaiDonHang) ||
+    duLieuLuu.taiKhoan?.vaiTro !== "khach_hang"
+  ) {
+    return;
+  }
+
+  dangTaiDonHang = true;
+  loiTaiDonHang = false;
+  veDonHang();
+
+  try {
+    const phanHoi = await goiApi("/api/don-hang");
+    if (!Array.isArray(phanHoi.donHang)) {
+      throw new TypeError("API không trả về danh sách đơn hàng hợp lệ.");
+    }
+    duLieuLuu.donHang = phanHoi.donHang;
+    daTaiDonHang = false;
+  } catch (loi) {
+    loiTaiDonHang = true;
+    console.error("Không thể tải đơn hàng của tài khoản.", loi);
+  } finally {
+    dangTaiDonHang = false;
+    if (trangHienTai === "don-hang") veTrang();
+  }
+}
+
+async function taiPhuongThucThanhToan() {
+  try {
+    const phanHoi = await goiApi("/api/don-hang/phuong-thuc");
+    if (
+      !Array.isArray(phanHoi.phuongThuc) ||
+      !phanHoi.phuongThuc.some((phuongThuc) => phuongThuc.ma === "cod")
+    ) {
+      throw new TypeError("API không trả về phương thức thanh toán hợp lệ.");
+    }
+    cacPhuongThucThanhToan = phanHoi.phuongThuc;
+  } catch (loi) {
+    console.error("Không thể tải phương thức thanh toán.", loi);
+    if (trangHienTai === "gio-hang") {
+      hienThongBao("Không thể tải phương thức thanh toán; hiện chỉ có thể thử COD.");
+    }
+  } finally {
+    if (trangHienTai === "gio-hang") veTrang();
+  }
+}
+
+async function capNhatDonHangQuanTri(maHD, duLieu) {
+  try {
+    await goiApi(`/api/don-hang/${encodeURIComponent(maHD)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(duLieu),
+    });
+    daTaiDuLieuQuanTri = false;
+    await taiDuLieuQuanTri();
+    hienThongBao(`Đã cập nhật đơn hàng #${maHD}.`);
+  } catch (loi) {
+    console.error(`Không thể cập nhật đơn hàng ${maHD}.`, loi);
+    hienThongBao(loi.message || "Không thể cập nhật đơn hàng.");
   }
 }
 
@@ -520,11 +704,16 @@ document.addEventListener(
   true,
 );
 
+// =============================================================================
+// LUỒNG HIỂN THỊ SỐ ĐẾM GIỎ HÀNG TRÊN THANH HEADER
+// =============================================================================
 function capNhatSoGio() {
+  // Tính tổng số lượng của toàn bộ các sản phẩm hiện có trong giỏ hàng
   const soLuong = duLieuLuu.gioHang.reduce(
     (tong, mon) => tong + mon.soLuong,
     0,
   );
+  // Cập nhật số đếm lên huy hiệu (badge) icon giỏ hàng trên giao diện
   document.getElementById("soLuongGio").textContent = soLuong;
   document.getElementById("nhanSoGio").textContent = `(${soLuong})`;
 }
@@ -569,6 +758,7 @@ function chuyenTrang(trangMoi) {
   });
   veTrang();
   if (trangMoi === "quan-tri") taiDuLieuQuanTri();
+  if (trangMoi === "don-hang") void taiDonHang();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -983,19 +1173,51 @@ function veCamNang() {
   </div>`;
 }
 
+function nhanTrangThaiDonHang(maTrangThai) {
+  const nhan = {
+    cho_xac_nhan: "Chờ xác nhận",
+    dang_xu_ly: "Đang xử lý",
+    dang_giao: "Đang giao",
+    hoan_thanh: "Hoàn thành",
+    da_huy: "Đã hủy",
+    da_hoan_hang: "Đã hoàn hàng",
+  };
+  return nhan[maTrangThai] || "Chưa cập nhật";
+}
+
+function nhanPhuongThucThanhToan(maPhuongThuc) {
+  return {
+    cod: "Thanh toán khi nhận hàng",
+    bank_transfer: "Chuyển khoản thủ công",
+  }[maPhuongThuc] || "Chưa có thông tin";
+}
+
+function nhanTrangThaiThanhToan(maTrangThai) {
+  return {
+    cho_thanh_toan: "Chờ thanh toán",
+    da_thanh_toan: "Đã thanh toán",
+    khong_can_thanh_toan: "Không cần thanh toán",
+    cho_hoan_tien: "Chờ hoàn tiền",
+    da_hoan_tien: "Đã hoàn tiền",
+  }[maTrangThai] || "Chưa xác định";
+}
+
+// =============================================================================
+// LUỒNG HIỂN THỊ DANH SÁCH ĐƠN HÀNG CỦA KHÁCH HÀNG (ORDER HISTORY VIEW)
+// =============================================================================
 function veDonHang() {
-  const donCuaToi = duLieuLuu.taiKhoan
-    ? duLieuLuu.donHang.filter(
-        (don) => don.tenTaiKhoan === duLieuLuu.taiKhoan.tenTaiKhoan,
-      )
-    : [];
-  const danhSach = duLieuLuu.taiKhoan ? donCuaToi : duLieuLuu.donHang;
+  // 1. Kiểm tra trạng thái phiên và phân quyền
+  const laKhachHang = duLieuLuu.taiKhoan?.vaiTro === "khach_hang";
+  const chuaDangNhap = duLieuLuu.taiKhoan === null;
+  const danhSach = laKhachHang ? duLieuLuu.donHang : [];
+  
+  // 2. Tính toán các chỉ số thống kê đơn hàng của tài khoản
   const tongChiTieu = danhSach.reduce(
     (tong, don) => tong + Number(don.tong || 0),
     0,
   );
   const soHoanTat = danhSach.filter(
-    (don) => don.trangThai === "Đã hoàn tất",
+    (don) => don.trangThai === "hoan_thanh",
   ).length;
   const tongSanPham = danhSach.reduce(
     (tong, don) =>
@@ -1006,12 +1228,36 @@ function veDonHang() {
       ),
     0,
   );
+  
+  // 3. Xử lý các trạng thái hiển thị: Chưa đăng nhập, Đang tải dữ liệu, Lỗi mạng hoặc Hiển thị danh sách thẻ đơn hàng
+  const noiDungDonHang = !laKhachHang
+    ? `<div class="flex flex-col items-center rounded-xl border border-dashed border-[#3f493f] bg-[#141d1a] px-5 py-12 text-center"><strong class="text-sm text-white">${chuaDangNhap ? "Đăng nhập bằng tài khoản khách hàng" : "Tài khoản hiện tại không có quyền xem lịch sử mua hàng khách hàng"}</strong><span class="mt-2 text-xs text-gray-400">Đơn hàng chỉ được hiển thị cho đúng tài khoản đã đặt.</span>${chuaDangNhap ? `<button class="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg bg-emerald-700 px-4 text-xs font-bold text-white" id="nutMoDangNhap">${taoIcon("log-in")} Đăng nhập</button>` : ""}</div>`
+    : dangTaiDonHang
+      ? `<div class="rounded-xl border border-[#3f493f] bg-[#141d1a] p-8 text-center text-sm text-gray-400">Đang tải đơn hàng từ hệ thống...</div>`
+      : loiTaiDonHang
+        ? `<div class="rounded-xl border border-red-900/50 bg-[#141d1a] p-8 text-center" role="alert"><p class="text-sm text-red-300">Không thể tải lịch sử đơn hàng.</p><button class="mt-3 text-xs font-semibold text-emerald-300" data-tai-don-hang>Tải lại</button></div>`
+        : danhSach.length
+          ? danhSach
+              .map((don) => {
+                const mauTrangThai = ["da_huy", "da_hoan_hang"].includes(
+                  don.trangThai,
+                )
+                  ? "border-red-800 bg-red-950/50 text-red-300"
+                  : don.trangThai === "hoan_thanh"
+                    ? "border-emerald-800 bg-emerald-950/40 text-emerald-300"
+                    : "border-amber-800 bg-amber-950/40 text-amber-300";
+                const huongDan = don.thongTinChuyenKhoan;
+                return `<article class="overflow-hidden rounded-xl border border-[#3f493f] bg-[#141d1a]"><header class="flex flex-wrap items-center justify-between gap-3 border-b border-[#3f493f]/70 bg-[#18211e] px-4 py-3"><div class="flex flex-wrap items-center gap-x-4 gap-y-1"><span class="text-xs font-bold text-white">Đơn hàng #${thoatHTML(don.MaHD)}</span><span class="text-[13.2px] text-gray-400">${thoatHTML(don.Ngaylap || "Chưa có ngày")}</span></div><span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] font-bold ${mauTrangThai}"><span class="h-1.5 w-1.5 rounded-full bg-current"></span>${nhanTrangThaiDonHang(don.trangThai)}</span></header><div class="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_220px]"><div class="divide-y divide-[#3f493f]/50">${(don.dongHang || []).map((dong) => `<div class="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0"><span class="min-w-0 text-xs text-gray-200">${thoatHTML(dong.TenSP || dong.MaSP)} <small class="text-gray-500">× ${thoatHTML(dong.SlBan)}</small></span><strong class="shrink-0 text-xs text-gray-300">${dinhDangTien(dong.ThanhTien || dong.TongHD || 0)}</strong></div>`).join("")}</div><div class="flex flex-col justify-between gap-3 border-t border-[#3f493f]/60 pt-3 md:border-l md:border-t-0 md:pl-4 md:pt-0"><div><span class="text-[12px] font-bold uppercase tracking-wider text-gray-500">Thanh toán</span><p class="mt-1 text-xs text-gray-300">${nhanPhuongThucThanhToan(don.phuongThuc)}</p><p class="mt-1 text-[12px] text-gray-400">${nhanTrangThaiThanhToan(don.trangThaiThanhToan)}</p>${don.diaChiGiao ? `<p class="mt-2 text-[12px] leading-4 text-gray-500">Nhận hàng: ${thoatHTML(don.diaChiGiao)}</p>` : ""}${huongDan ? `<div class="mt-3 rounded-lg border border-emerald-800/50 bg-emerald-950/20 p-3 text-[12px] text-gray-300"><strong class="block text-emerald-300">Thông tin chuyển khoản</strong><span class="mt-1 block">${thoatHTML(huongDan.nganHang)} · ${thoatHTML(huongDan.soTaiKhoan)}</span><span class="block">${thoatHTML(huongDan.chuTaiKhoan)}</span><span class="mt-1 block">Nội dung: <strong>${thoatHTML(huongDan.noiDung)}</strong></span></div>` : ""}</div><div class="flex items-end justify-between gap-2"><span class="text-[12px] text-gray-400">Tổng tiền hàng</span><strong class="text-sm font-extrabold text-emerald-300">${dinhDangTien(don.tong)}</strong></div></div></div></article>`;
+              })
+              .join("")
+          : `<div class="flex flex-col items-center rounded-xl border border-dashed border-[#3f493f] bg-[#141d1a] px-5 py-12 text-center"><span class="material-symbols-outlined text-4xl text-gray-500">package_2</span><strong class="mt-3 text-sm text-white">Bạn chưa có đơn hàng</strong><span class="mt-1 max-w-md text-xs leading-5 text-gray-400">Đơn hàng sẽ xuất hiện tại đây sau khi được tạo từ giỏ hàng.</span><button class="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg border border-[#3f493f] px-4 text-xs font-semibold text-gray-200" data-xem="cua-hang">Tiếp tục mua sắm ${taoIcon("arrow-right")}</button></div>`;
+
   oNoiDung.innerHTML = `<div class="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
     <nav class="flex items-center gap-2 text-xs text-gray-500" aria-label="Breadcrumb"><button class="text-gray-400 hover:text-emerald-300" data-xem="cua-hang">Cửa hàng</button><span>/</span><span class="text-gray-200">Đơn hàng của tôi</span></nav>
-    <header class="flex flex-col justify-between gap-4 border-b border-[#3f493f]/60 pb-5 sm:flex-row sm:items-end"><div><span class="mb-2 inline-flex items-center gap-2 rounded border border-emerald-800/60 bg-[#18211e] px-2.5 py-1 text-[12px] font-bold uppercase tracking-wider text-emerald-300"><span class="material-symbols-outlined text-lg">receipt_long</span>Lịch sử mua sắm</span><h1 class="text-3xl font-extrabold tracking-tight text-white md:text-4xl">Đơn hàng của tôi</h1><p class="mt-2 text-sm text-gray-400">${duLieuLuu.taiKhoan ? `Xin chào ${thoatHTML(duLieuLuu.taiKhoan.ten)} — theo dõi các đơn hàng thuộc tài khoản này.` : "Đăng nhập để xem đơn hàng thuộc tài khoản của bạn."}</p></div>${!duLieuLuu.taiKhoan ? `<button class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 text-xs font-bold text-white hover:bg-emerald-600" id="nutMoDangNhap">${taoIcon("log-in")} Đăng nhập</button>` : `<button class="inline-flex min-h-10 items-center gap-2 self-start rounded-lg border border-[#3f493f] px-3 text-xs font-semibold text-gray-300 hover:bg-[#232c29]" data-xem="cua-hang">${taoIcon("arrow-left")} Tiếp tục mua sắm</button>`}</header>
+    <header class="flex flex-col justify-between gap-4 border-b border-[#3f493f]/60 pb-5 sm:flex-row sm:items-end"><div><span class="mb-2 inline-flex items-center gap-2 rounded border border-emerald-800/60 bg-[#18211e] px-2.5 py-1 text-[12px] font-bold uppercase tracking-wider text-emerald-300"><span class="material-symbols-outlined text-lg">receipt_long</span>Lịch sử mua sắm</span><h1 class="text-3xl font-extrabold tracking-tight text-white md:text-4xl">Đơn hàng của tôi</h1><p class="mt-2 text-sm text-gray-400">${laKhachHang ? `Xin chào ${thoatHTML(duLieuLuu.taiKhoan.ten)} — đơn hàng được tải theo tài khoản này.` : "Đăng nhập để xem đơn hàng thuộc tài khoản của bạn."}</p></div>${laKhachHang ? `<div class="flex gap-2"><button class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-[#3f493f] px-3 text-xs font-semibold text-gray-300 hover:bg-[#232c29]" data-tai-don-hang>${taoIcon("refresh-cw")} Làm mới</button><button class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-[#3f493f] px-3 text-xs font-semibold text-gray-300 hover:bg-[#232c29]" data-xem="cua-hang">${taoIcon("arrow-left")} Tiếp tục mua sắm</button></div>` : ""}</header>
     <section class="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label="Tổng quan đơn hàng"><article class="flex items-center justify-between rounded-xl border border-[#3f493f] bg-[#141d1a] p-4"><div><span class="text-[12px] font-bold uppercase tracking-wider text-gray-400">Tổng đơn hàng</span><strong class="mt-1 block text-2xl font-extrabold text-white">${danhSach.length}</strong></div><span class="grid h-10 w-10 place-items-center rounded-lg bg-emerald-950 text-emerald-300"><span class="material-symbols-outlined">inventory_2</span></span></article><article class="flex items-center justify-between rounded-xl border border-[#3f493f] bg-[#141d1a] p-4"><div><span class="text-[12px] font-bold uppercase tracking-wider text-gray-400">Đã hoàn tất</span><strong class="mt-1 block text-2xl font-extrabold text-white">${soHoanTat}</strong></div><span class="grid h-10 w-10 place-items-center rounded-lg bg-emerald-950 text-emerald-300"><span class="material-symbols-outlined">task_alt</span></span></article><article class="flex items-center justify-between rounded-xl border border-[#3f493f] bg-[#141d1a] p-4"><div><span class="text-[12px] font-bold uppercase tracking-wider text-gray-400">Sản phẩm đã đặt</span><strong class="mt-1 block text-2xl font-extrabold text-white">${tongSanPham}</strong></div><span class="grid h-10 w-10 place-items-center rounded-lg bg-amber-950/60 text-amber-300"><span class="material-symbols-outlined">shopping_bag</span></span></article></section>
-    <section class="space-y-4"><div class="flex flex-col justify-between gap-2 border-b border-[#3f493f]/60 pb-3 sm:flex-row sm:items-end"><div><h2 class="text-lg font-bold text-white">Lịch sử giao dịch</h2><p class="mt-1 text-xs text-gray-400">Thông tin được hiển thị theo dữ liệu đơn hàng hiện có.</p></div><span class="text-xs text-gray-500">Tổng giá trị: <strong class="text-emerald-300">${dinhDangTien(tongChiTieu)}</strong></span></div>
-      <div class="space-y-4">${danhSach.length ? danhSach.map((don) => `<article class="overflow-hidden rounded-xl border border-[#3f493f] bg-[#141d1a]"><header class="flex flex-wrap items-center justify-between gap-3 border-b border-[#3f493f]/70 bg-[#18211e] px-4 py-3"><div class="flex flex-wrap items-center gap-x-4 gap-y-1"><span class="text-xs font-bold text-white">Đơn hàng #${thoatHTML(don.MaHD)}</span><span class="text-[13.2px] text-gray-400">${thoatHTML(don.Ngaylap || "Chưa có ngày")}</span></div><span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-800/60 bg-emerald-950/40 px-2.5 py-1 text-[12px] font-bold text-emerald-300"><span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>${thoatHTML(don.trangThai || "Chưa cập nhật")}</span></header><div class="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_200px]"><div class="divide-y divide-[#3f493f]/50">${(don.dongHang || []).map((dong) => `<div class="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0"><span class="min-w-0 text-xs text-gray-200">${thoatHTML(dong.TenSP)} <small class="text-gray-500">× ${thoatHTML(dong.SlBan)}</small></span><strong class="shrink-0 text-xs text-gray-300">${dinhDangTien(Number(dong.TongHD || dong.GiaBan * dong.SlBan || 0))}</strong></div>`).join("")}</div><div class="flex flex-col justify-between gap-3 border-t border-[#3f493f]/60 pt-3 md:border-l md:border-t-0 md:pl-4 md:pt-0"><div><span class="text-[12px] font-bold uppercase tracking-wider text-gray-500">Phương thức</span><p class="mt-1 flex items-center gap-1.5 text-xs text-gray-300">${taoIcon("credit-card")} ${thoatHTML(don.phuongThuc || "Chưa có thông tin")}</p>${don.diaChiGiao ? `<p class="mt-2 text-[12px] leading-4 text-gray-500">Nhận hàng: ${thoatHTML(don.diaChiGiao)}</p>` : ""}</div><div class="flex items-end justify-between gap-2"><span class="text-[12px] text-gray-400">Tổng thanh toán</span><strong class="text-sm font-extrabold text-emerald-300">${dinhDangTien(don.tong)}</strong></div></div></div></article>`).join("") : `<div class="flex flex-col items-center rounded-xl border border-dashed border-[#3f493f] bg-[#141d1a] px-5 py-12 text-center"><span class="material-symbols-outlined text-4xl text-gray-500">package_2</span><strong class="mt-3 text-sm text-white">Bạn chưa có đơn hàng</strong><span class="mt-1 max-w-md text-xs leading-5 text-gray-400">${duLieuLuu.taiKhoan ? "Đơn hàng sẽ xuất hiện tại đây khi hệ thống có dữ liệu." : "Đăng nhập để xem lịch sử mua hàng thuộc tài khoản của bạn."}</span>${!duLieuLuu.taiKhoan ? `<button class="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg bg-emerald-700 px-4 text-xs font-bold text-white" id="nutMoDangNhap">${taoIcon("log-in")} Đăng nhập</button>` : `<button class="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg border border-[#3f493f] px-4 text-xs font-semibold text-gray-200" data-xem="cua-hang">Tiếp tục mua sắm ${taoIcon("arrow-right")}</button>`}</div>`}</div>
+    <section class="space-y-4"><div class="flex flex-col justify-between gap-2 border-b border-[#3f493f]/60 pb-3 sm:flex-row sm:items-end"><div><h2 class="text-lg font-bold text-white">Lịch sử giao dịch</h2><p class="mt-1 text-xs text-gray-400">Đơn hàng và trạng thái thanh toán lấy trực tiếp từ hệ thống.</p></div><span class="text-xs text-gray-500">Tổng giá trị đơn hàng: <strong class="text-emerald-300">${dinhDangTien(tongChiTieu)}</strong></span></div>
+      <div class="space-y-4">${noiDungDonHang}</div>
     </section>
   </div>`;
 }
@@ -1072,6 +1318,17 @@ function veQuanTri() {
     return chuyenTrang("cua-hang");
   }
   const laAdmin = duLieuLuu.taiKhoan.vaiTro === "admin";
+  const quyenSP = {
+    coThem: coQuyenUI("san_pham.them"),
+    coSua: coQuyenUI("san_pham.sua"),
+    coAn: coQuyenUI("san_pham.an"),
+    coXoa: coQuyenUI("san_pham.xoa"),
+    coKhoiPhuc: coQuyenUI("san_pham.khoi_phuc"),
+  };
+  const coXemTaiKhoan = coQuyenUI("tai_khoan.xem");
+  const coXemNhatKy = coQuyenUI("nhat_ky.xem");
+  if (tabQuanTri === "nguoi-dung" && !coXemTaiKhoan) tabQuanTri = "tong-quan";
+  if (tabQuanTri === "nhat-ky" && !coXemNhatKy) tabQuanTri = "tong-quan";
   const sapHetHang = duLieuLuu.sanPham.filter(
     (sanPham) => Number(sanPham.Soluong) <= 5,
   );
@@ -1088,23 +1345,26 @@ function veQuanTri() {
     duLieuQuanTri.taiKhoan.filter((taiKhoan) => taiKhoan.VaiTro === vaiTro)
       .length;
   const donChoXuLy = duLieuQuanTri.donHang.filter((don) =>
-    /chờ|xử lý/i.test(don.trangThai || ""),
+    ["cho_xac_nhan", "dang_xu_ly"].includes(don.trangThai),
   ).length;
-  const donDangGiao = duLieuQuanTri.donHang.filter((don) =>
-    /giao|vận chuyển/i.test(don.trangThai || ""),
+  const donDangGiao = duLieuQuanTri.donHang.filter(
+    (don) => don.trangThai === "dang_giao",
   ).length;
-  const donHoanTat = duLieuQuanTri.donHang.filter((don) =>
-    /hoàn tất|hoàn thành|đã giao/i.test(don.trangThai || ""),
+  const donHoanTat = duLieuQuanTri.donHang.filter(
+    (don) => don.trangThai === "hoan_thanh",
   ).length;
   const donDaHuy = duLieuQuanTri.donHang.filter((don) =>
-    /hủy|hoàn trả/i.test(don.trangThai || ""),
+    ["da_huy", "da_hoan_hang"].includes(don.trangThai),
   ).length;
   const cacTab = [
     ["tong-quan", "Tổng quan", "dashboard"],
     ["san-pham", "Sản phẩm & tồn kho", "inventory_2"],
     ["don-hang", "Đơn hàng & Hóa đơn", "receipt_long"],
-    ["nguoi-dung", "Tài khoản & Phân quyền", "manage_accounts"],
+    ...(coXemTaiKhoan
+      ? [["nguoi-dung", "Tài khoản & Phân quyền", "manage_accounts"]]
+      : []),
     ["benh-cay", "Dữ liệu bệnh cây & AI", "psychiatry"],
+    ...(coXemNhatKy ? [["nhat-ky", "Nhật ký hoạt động", "history"]] : []),
   ];
   const [tieuDeTab, moTaTab] = {
     "tong-quan": [
@@ -1126,6 +1386,10 @@ function veQuanTri() {
     "benh-cay": [
       "Dữ liệu bệnh cây & AI",
       "Thư viện tham khảo hiện có; dịch vụ chẩn đoán chưa được kết nối.",
+    ],
+    "nhat-ky": [
+      "Nhật ký hoạt động",
+      "Các thao tác gần đây của nhân viên và quản trị viên.",
     ],
   }[tabQuanTri] || [
     "Quản trị cửa hàng",
@@ -1167,7 +1431,7 @@ function veQuanTri() {
       <article class="rounded-xl border border-[#213831] bg-[#14201c] p-4">${materialIcon("payments", "text-amber-300")}<p class="mt-3 text-[13.2px] text-gray-400">Giá bán ước tính tồn kho</p><strong class="text-lg font-extrabold text-white">${dangTaiSanPham ? "—" : dinhDangTien(giaTriTonGiaBan)}</strong><small class="block text-[12px] text-gray-500">Không phải giá vốn nhập kho</small></article>
     </section>
     <section class="overflow-hidden rounded-xl border border-[#213831] bg-[#14201c]"><div class="flex flex-col justify-between gap-3 border-b border-[#1f332c] p-5 sm:flex-row sm:items-center"><div><h2 class="flex items-center gap-2 text-base font-bold text-white">${materialIcon("inventory_2", "text-emerald-400")} Sản phẩm &amp; tồn kho</h2><p class="mt-1 text-xs text-gray-400">Theo dõi số lượng, giá bán và nhà cung cấp.</p></div><span class="text-xs text-gray-500">${dangTaiSanPham ? "Đang đồng bộ..." : `${duLieuLuu.sanPham.length} mặt hàng`}</span></div>
-      ${veBoLocKho()}${dangTaiSanPham ? `<div class="st-empty">${taoIcon("loader-circle")}<strong>Đang tải kho hàng</strong><span>Đang đọc danh mục từ hệ thống.</span></div>` : loiTaiSanPham ? `<div class="st-empty" role="alert">${taoIcon("triangle-alert")}<strong>Không thể tải sản phẩm</strong><span>Kiểm tra kết nối và thử tải lại.</span><button class="nut-phu" data-lam-moi-san-pham>${taoIcon("refresh-cw")} Thử lại</button></div>` : veBangSanPham(laAdmin)}
+      ${veBoLocKho()}${dangTaiSanPham ? `<div class="st-empty">${taoIcon("loader-circle")}<strong>Đang tải kho hàng</strong><span>Đang đọc danh mục từ hệ thống.</span></div>` : loiTaiSanPham ? `<div class="st-empty" role="alert">${taoIcon("triangle-alert")}<strong>Không thể tải sản phẩm</strong><span>Kiểm tra kết nối và thử tải lại.</span><button class="nut-phu" data-lam-moi-san-pham>${taoIcon("refresh-cw")} Thử lại</button></div>` : veBangSanPham(quyenSP.coSua || quyenSP.coAn || quyenSP.coXoa || quyenSP.coKhoiPhuc, quyenSP)}
     </section>`;
   if (tabQuanTri === "don-hang")
     noiDungTab = `<section class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -1178,8 +1442,8 @@ function veQuanTri() {
       <article class="col-span-2 rounded-xl border border-[#213831] bg-[#14201c] p-4 sm:col-span-1"><span class="text-[13.2px] text-gray-400">Tổng hóa đơn</span><strong class="mt-2 block text-3xl font-extrabold text-white">${dangTaiDuLieuQuanTri ? "—" : duLieuQuanTri.donHang.length}</strong><small class="text-[13.2px] text-gray-400">Trong hệ thống</small></article>
     </section>
     <section class="overflow-hidden rounded-xl border border-[#213831] bg-[#14201c]"><div class="border-b border-[#1f332c] p-5"><h2 class="text-base font-bold text-white">Quản lý đơn hàng &amp; Hóa đơn</h2><p class="mt-1 text-xs text-gray-400">Tra cứu hóa đơn đã được hệ thống ghi nhận.</p></div>
-      <div class="grid gap-3 border-b border-[#1f332c] bg-[#101915] p-4 sm:grid-cols-[minmax(220px,1fr)_minmax(170px,.4fr)]"><label class="relative block"><span class="sr-only">Tìm hóa đơn</span><span class="material-symbols-outlined pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-base text-gray-500">search</span><input id="timHoaDonQuanTri" class="w-full rounded-lg border border-[#30453b] bg-[#0f1915] px-3 py-2 pl-9 text-xs text-gray-200 placeholder-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" type="search" value="${thoatHTML(tuKhoaHoaDon)}" placeholder="Tìm mã hóa đơn, khách hàng..." aria-label="Tìm hóa đơn"></label><label class="text-[12px] font-semibold text-gray-400">Trạng thái<select class="mt-1.5 w-full rounded-lg border border-[#30453b] bg-[#0f1915] px-3 py-2 text-xs text-gray-200 focus:border-emerald-500 focus:outline-none" id="locTrangThaiHoaDon"><option value="">Tất cả (${duLieuQuanTri.donHang.length})</option>${[...new Set(duLieuQuanTri.donHang.map((d) => d.trangThai).filter(Boolean))].map((trangThai) => `<option value="${thoatHTML(trangThai)}" ${locTrangThaiHoaDon === trangThai ? "selected" : ""}>${thoatHTML(trangThai)} (${duLieuQuanTri.donHang.filter((d) => d.trangThai === trangThai).length})</option>`).join("")}</select></label></div>
-      ${loiTaiDuLieuQuanTri ? `<p role="alert">Không thể tải hóa đơn từ MySQL. Kiểm tra API quản trị và cấu hình database.</p>` : dangTaiDuLieuQuanTri ? `<div class="st-empty">${taoIcon("loader-circle")}<strong>Đang tải hóa đơn</strong></div>` : veBangDonHang(duLieuQuanTri.donHang)}
+      <div class="grid gap-3 border-b border-[#1f332c] bg-[#101915] p-4 sm:grid-cols-[minmax(220px,1fr)_minmax(170px,.4fr)]"><label class="relative block"><span class="sr-only">Tìm hóa đơn</span><span class="material-symbols-outlined pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-base text-gray-500">search</span><input id="timHoaDonQuanTri" class="w-full rounded-lg border border-[#30453b] bg-[#0f1915] px-3 py-2 pl-9 text-xs text-gray-200 placeholder-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" type="search" value="${thoatHTML(tuKhoaHoaDon)}" placeholder="Tìm mã hóa đơn, khách hàng..." aria-label="Tìm hóa đơn"></label><label class="text-[12px] font-semibold text-gray-400">Trạng thái<select class="mt-1.5 w-full rounded-lg border border-[#30453b] bg-[#0f1915] px-3 py-2 text-xs text-gray-200 focus:border-emerald-500 focus:outline-none" id="locTrangThaiHoaDon"><option value="">Tất cả (${duLieuQuanTri.donHang.length})</option>${[...new Set(duLieuQuanTri.donHang.map((d) => d.trangThai).filter(Boolean))].map((trangThai) => `<option value="${thoatHTML(trangThai)}" ${locTrangThaiHoaDon === trangThai ? "selected" : ""}>${nhanTrangThaiDonHang(trangThai)} (${duLieuQuanTri.donHang.filter((d) => d.trangThai === trangThai).length})</option>`).join("")}</select></label></div>
+      ${loiTaiDuLieuQuanTri ? `<p role="alert">Không thể tải hóa đơn từ MySQL. Kiểm tra API quản trị và cấu hình database.</p>` : dangTaiDuLieuQuanTri ? `<div class="st-empty">${taoIcon("loader-circle")}<strong>Đang tải hóa đơn</strong></div>` : veBangDonHang(duLieuQuanTri.donHang, duLieuLuu.taiKhoan?.vaiTro === "admin")}
     </section>`;
   if (tabQuanTri === "nguoi-dung")
     noiDungTab = `<section class="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -1188,16 +1452,17 @@ function veQuanTri() {
       <article class="rounded-xl border border-[#213831] bg-[#14201c] p-4"><span class="text-[13.2px] text-gray-400">Nhân viên</span><strong class="mt-2 block text-3xl font-extrabold text-white">${dangTaiDuLieuQuanTri ? "—" : taiKhoanTheoVaiTro("nhan_vien")}</strong></article>
       <article class="rounded-xl border border-[#213831] bg-[#14201c] p-4"><span class="text-[13.2px] text-gray-400">Khách hàng</span><strong class="mt-2 block text-3xl font-extrabold text-white">${dangTaiDuLieuQuanTri ? "—" : taiKhoanTheoVaiTro("khach_hang")}</strong></article>
     </section>
-    <section class="overflow-hidden rounded-xl border border-[#213831] bg-[#14201c]"><div class="border-b border-[#1f332c] p-5"><h2 class="text-base font-bold text-white">Tài khoản &amp; Phân quyền</h2><p class="mt-1 text-xs text-gray-400">Vai trò được lấy từ hệ thống. Đổi vai trò cần API quản trị riêng.</p></div>
+    <section class="overflow-hidden rounded-xl border border-[#213831] bg-[#14201c]"><div class="border-b border-[#1f332c] p-5"><h2 class="text-base font-bold text-white">Tài khoản &amp; Phân quyền</h2><p class="mt-1 text-xs text-gray-400">Chỉ quản trị viên được tạo tài khoản, đổi vai trò và khóa/mở khóa. Không thể tự khóa hoặc tự đổi vai trò của chính mình.</p><form id="formTaoNhanVien" class="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]"><input name="tenTaiKhoan" required minlength="3" maxlength="32" autocomplete="off" placeholder="Tên đăng nhập nhân viên" class="rounded-lg border border-[#30453b] bg-[#0f1915] px-3 py-2 text-xs text-gray-200 placeholder-gray-500"><input name="email" type="email" autocomplete="off" placeholder="Email (không bắt buộc)" class="rounded-lg border border-[#30453b] bg-[#0f1915] px-3 py-2 text-xs text-gray-200 placeholder-gray-500"><input name="matKhau" type="password" required minlength="12" autocomplete="new-password" placeholder="Mật khẩu (≥ 12 ký tự)" class="rounded-lg border border-[#30453b] bg-[#0f1915] px-3 py-2 text-xs text-gray-200 placeholder-gray-500"><button class="rounded-lg bg-emerald-700 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-600" type="submit">Tạo nhân viên</button></form></div>
       <div class="grid gap-3 border-b border-[#1f332c] bg-[#101915] p-4 sm:grid-cols-[minmax(220px,1fr)_minmax(170px,.4fr)]"><label class="relative block"><span class="sr-only">Tìm tài khoản</span><span class="material-symbols-outlined pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-base text-gray-500">search</span><input id="timTaiKhoanQuanTri" class="w-full rounded-lg border border-[#30453b] bg-[#0f1915] px-3 py-2 pl-9 text-xs text-gray-200 placeholder-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" type="search" value="${thoatHTML(tuKhoaTaiKhoan)}" placeholder="Tìm mã hoặc tên tài khoản..." aria-label="Tìm tài khoản"></label><label class="text-[12px] font-semibold text-gray-400">Vai trò<select class="mt-1.5 w-full rounded-lg border border-[#30453b] bg-[#0f1915] px-3 py-2 text-xs text-gray-200 focus:border-emerald-500 focus:outline-none" id="locVaiTroTaiKhoan"><option value="">Tất cả vai trò</option><option value="admin" ${locVaiTroTaiKhoan === "admin" ? "selected" : ""}>Quản trị viên</option><option value="nhan_vien" ${locVaiTroTaiKhoan === "nhan_vien" ? "selected" : ""}>Nhân viên</option><option value="khach_hang" ${locVaiTroTaiKhoan === "khach_hang" ? "selected" : ""}>Khách hàng</option></select></label></div>
       ${loiTaiDuLieuQuanTri ? `<p role="alert">Không thể tải tài khoản từ MySQL. Kiểm tra API quản trị và cấu hình database.</p>` : veBangNguoiDung()}
     </section>`;
+  if (tabQuanTri === "nhat-ky") noiDungTab = veNhatKy();
   if (tabQuanTri === "benh-cay")
     noiDungTab = `<section class="rounded-xl border border-amber-800/50 bg-[#14201c] p-5 sm:p-6"><div class="flex flex-col gap-4 sm:flex-row sm:items-center"><span class="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-amber-700/40 bg-amber-950/50 text-amber-300">${materialIcon("psychiatry", "text-2xl")}</span><div><span class="text-[12px] font-bold uppercase tracking-[.15em] text-amber-300">TRẠNG THÁI DỊCH VỤ</span><h2 class="mt-1 text-lg font-bold text-white">Chưa kết nối dịch vụ chẩn đoán AI</h2><p class="mt-1 max-w-3xl text-sm text-gray-400">Ứng dụng hiện chưa có API lưu dữ liệu bệnh cây, dataset huấn luyện hoặc chẩn đoán ảnh. Chỉ hiển thị nội dung thực có trong hệ thống.</p></div><span class="sm:ml-auto rounded-full border border-amber-700/50 bg-amber-950/40 px-3 py-1 text-xs font-bold text-amber-300">Chưa khả dụng</span></div></section>
     <section class="grid grid-cols-2 gap-3 sm:grid-cols-4"><article class="rounded-xl border border-[#213831] bg-[#14201c] p-4"><span class="text-[13.2px] text-gray-400">Bài tham khảo phiên này</span><strong class="mt-2 block text-2xl font-extrabold text-white">${duLieuLuu.benhCay.length}</strong></article><article class="rounded-xl border border-[#213831] bg-[#14201c] p-4"><span class="text-[13.2px] text-gray-400">Dataset ảnh</span><strong class="mt-2 block text-base font-bold text-amber-300">Chưa kết nối</strong></article><article class="rounded-xl border border-[#213831] bg-[#14201c] p-4"><span class="text-[13.2px] text-gray-400">Mô hình AI</span><strong class="mt-2 block text-base font-bold text-amber-300">Chưa kết nối</strong></article><article class="rounded-xl border border-[#213831] bg-[#14201c] p-4"><span class="text-[13.2px] text-gray-400">Sản phẩm liên kết</span><strong class="mt-2 block text-base font-bold text-gray-300">Chưa có dữ liệu</strong></article></section>
     <section class="overflow-hidden rounded-xl border border-[#213831] bg-[#14201c]"><div class="border-b border-[#1f332c] p-5"><h2 class="text-base font-bold text-white">Thư viện bệnh cây</h2><p class="mt-1 text-xs text-gray-400">Hiển thị nội dung đang có, không dùng dữ liệu minh họa.</p></div><div class="p-5">${veBangBenh()}<p class="mt-4 flex gap-2 border-t border-[#1b2b25] pt-4 text-xs leading-5 text-gray-400">${materialIcon("info", "text-amber-300")}Việc thêm hoặc chỉnh sửa dữ liệu cần API lưu trữ riêng.</p></div></section>`;
   oNoiDung.innerHTML = `<div class="st-admin-root st-admin-page mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-    <div class="flex flex-col justify-between gap-4 border-b border-[#1d2f29] pb-5 md:flex-row md:items-end"><div><nav class="mb-2 flex items-center gap-2 text-xs font-medium text-gray-400" aria-label="Đường dẫn"><a class="text-gray-400 no-underline hover:text-emerald-400" href="../index.html">Không gian cửa hàng</a><span>/</span><span class="text-emerald-400">Quản trị</span></nav><h1 class="flex flex-wrap items-center gap-3 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">${thoatHTML(tieuDeTab)}<span class="rounded-full border border-emerald-800/80 bg-emerald-950/80 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-emerald-400">${laAdmin ? "Admin Workspace" : "Staff Workspace"}</span></h1><p class="mt-1 text-xs text-gray-400 sm:text-sm">${thoatHTML(moTaTab)}</p></div><div class="flex flex-wrap gap-2">${tabQuanTri === "san-pham" && laAdmin ? `<button class="flex items-center gap-2 rounded-lg bg-gradient-to-r from-amber-400 to-amber-500 px-4 py-2 text-xs font-bold text-gray-950 shadow-md shadow-amber-500/20 transition-all hover:from-amber-500 hover:to-amber-600" id="nutThemSanPham" type="button">${materialIcon("add")}Thêm sản phẩm mới</button>` : `<a href="../index.html" class="flex items-center gap-2 rounded-lg border border-[#223932] bg-[#162420] px-3.5 py-2 text-xs font-semibold text-gray-200 no-underline hover:bg-[#1e332d]">${materialIcon("storefront")} Về cửa hàng</a>`}</div></div>
+    <div class="flex flex-col justify-between gap-4 border-b border-[#1d2f29] pb-5 md:flex-row md:items-end"><div><nav class="mb-2 flex items-center gap-2 text-xs font-medium text-gray-400" aria-label="Đường dẫn"><a class="text-gray-400 no-underline hover:text-emerald-400" href="../index.html">Không gian cửa hàng</a><span>/</span><span class="text-emerald-400">Quản trị</span></nav><h1 class="flex flex-wrap items-center gap-3 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">${thoatHTML(tieuDeTab)}<span class="rounded-full border border-emerald-800/80 bg-emerald-950/80 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-emerald-400">${laAdmin ? "Admin Workspace" : "Staff Workspace"}</span></h1><p class="mt-1 text-xs text-gray-400 sm:text-sm">${thoatHTML(moTaTab)}</p></div><div class="flex flex-wrap gap-2">${tabQuanTri === "san-pham" && quyenSP.coThem ? `<button class="flex items-center gap-2 rounded-lg bg-gradient-to-r from-amber-400 to-amber-500 px-4 py-2 text-xs font-bold text-gray-950 shadow-md shadow-amber-500/20 transition-all hover:from-amber-500 hover:to-amber-600" id="nutThemSanPham" type="button">${materialIcon("add")}Thêm sản phẩm mới</button>` : `<a href="../index.html" class="flex items-center gap-2 rounded-lg border border-[#223932] bg-[#162420] px-3.5 py-2 text-xs font-semibold text-gray-200 no-underline hover:bg-[#1e332d]">${materialIcon("storefront")} Về cửa hàng</a>`}</div></div>
     <nav class="st-admin-tabs flex min-w-0 flex-wrap justify-center gap-x-6 border-b border-[#1d2f29]" role="tablist" aria-label="Các khu vực quản trị">${cacTab.map(tabButton).join("")}</nav>
     <section class="flex flex-col gap-6">${noiDungTab}</section>
   </div>`;
@@ -1347,7 +1612,7 @@ function veFormSanPham() {
   </form>`;
 }
 
-function veBangSanPham(choPhepSua = false) {
+function veBangSanPham(choPhepSua = false, quyen = {}) {
   if (dangTaiSanPham)
     return `<div class="p-10 text-center text-sm text-gray-400">${taoIcon("loader-circle")}<strong class="mt-2 block text-gray-200">Đang tải sản phẩm</strong>Đang đọc danh sách từ hệ thống.</div>`;
   if (loiTaiSanPham)
@@ -1374,25 +1639,47 @@ function veBangSanPham(choPhepSua = false) {
           : trangThaiTon === "ton-thap"
             ? "border-amber-800 bg-amber-950/60 text-amber-300"
             : "border-emerald-800 bg-emerald-950/60 text-emerald-300";
-      return `<tr class="st-inventory-row transition-colors hover:bg-[#182622]" data-search="${thoatHTML(timKiem)}" data-category="${thoatHTML(sanPham.DanhMuc || "")}" data-stock-status="${trangThaiTon}" data-stock="${soLuong}" data-price="${Number(sanPham.Giaban || 0)}" data-name="${thoatHTML(sanPham.TenSP)}" data-original-index="${viTri}"><td class="px-4 py-3">${sanPham.anh ? `<img class="h-10 w-10 rounded-lg object-cover" src="${thoatHTML(sanPham.anh)}" alt="" loading="lazy">` : `<span class="grid h-10 w-10 place-items-center rounded-lg border border-[#253d34] bg-[#192823] text-emerald-400">${taoIcon("package")}</span>`}</td><td class="px-4 py-3"><strong class="block font-semibold text-white">${thoatHTML(sanPham.TenSP)}</strong><small class="mt-1 block font-mono text-[12px] text-gray-500">${thoatHTML(sanPham.MaSP)} · ${thoatHTML(sanPham.DviTinh)}</small></td><td class="px-4 py-3">${thoatHTML(danhMuc || "Chưa phân loại")}</td><td class="px-4 py-3">${thoatHTML(sanPham.TenNCC)}</td><td class="px-4 py-3 text-right font-mono">${thoatHTML(sanPham.Soluong)} ${thoatHTML(sanPham.DviTinh)}</td><td class="px-4 py-3 text-right font-mono font-bold text-emerald-300">${dinhDangTien(sanPham.Giaban)}</td><td class="px-4 py-3 text-center"><span class="inline-flex rounded-full border px-2.5 py-1 text-[12px] font-semibold ${mauTrangThai}">${nhanTon}</span></td>${choPhepSua ? `<td class="px-4 py-3 text-right"><div class="inline-flex items-center gap-2"><button class="rounded-md border border-[#30453b] px-2.5 py-1.5 text-[13.2px] font-semibold text-gray-200 hover:border-emerald-700 hover:text-emerald-300" data-sua-san-pham="${thoatHTML(sanPham.MaSP)}">Sửa</button><button class="rounded-md p-1.5 text-red-300 hover:bg-red-950/40" data-xoa-san-pham="${thoatHTML(sanPham.MaSP)}" aria-label="Xóa ${thoatHTML(sanPham.TenSP)}">${taoIcon("trash-2")}</button></div></td>` : ""}</tr>`;
+      return `<tr class="st-inventory-row transition-colors hover:bg-[#182622]" data-search="${thoatHTML(timKiem)}" data-category="${thoatHTML(sanPham.DanhMuc || "")}" data-stock-status="${trangThaiTon}" data-stock="${soLuong}" data-price="${Number(sanPham.Giaban || 0)}" data-name="${thoatHTML(sanPham.TenSP)}" data-original-index="${viTri}"><td class="px-4 py-3">${sanPham.anh ? `<img class="h-10 w-10 rounded-lg object-cover" src="${thoatHTML(sanPham.anh)}" alt="" loading="lazy">` : `<span class="grid h-10 w-10 place-items-center rounded-lg border border-[#253d34] bg-[#192823] text-emerald-400">${taoIcon("package")}</span>`}</td><td class="px-4 py-3"><strong class="block font-semibold text-white">${thoatHTML(sanPham.TenSP)}</strong><small class="mt-1 block font-mono text-[12px] text-gray-500">${thoatHTML(sanPham.MaSP)} · ${thoatHTML(sanPham.DviTinh)}</small></td><td class="px-4 py-3">${thoatHTML(danhMuc || "Chưa phân loại")}</td><td class="px-4 py-3">${thoatHTML(sanPham.TenNCC)}</td><td class="px-4 py-3 text-right font-mono">${thoatHTML(sanPham.Soluong)} ${thoatHTML(sanPham.DviTinh)}</td><td class="px-4 py-3 text-right font-mono font-bold text-emerald-300">${dinhDangTien(sanPham.Giaban)}</td><td class="px-4 py-3 text-center"><span class="inline-flex rounded-full border px-2.5 py-1 text-[12px] font-semibold ${mauTrangThai}">${nhanTon}</span>${sanPham.DaAn ? '<span class="ml-1 inline-flex rounded-full border border-gray-600 bg-gray-800/60 px-2 py-1 text-[12px] font-semibold text-gray-300">Đã ẩn</span>' : ""}</td>${choPhepSua ? `<td class="px-4 py-3 text-right"><div class="inline-flex items-center gap-2">${quyen.coSua ? `<button class="rounded-md border border-[#30453b] px-2.5 py-1.5 text-[13.2px] font-semibold text-gray-200 hover:border-emerald-700 hover:text-emerald-300" data-sua-san-pham="${thoatHTML(sanPham.MaSP)}">Sửa</button>` : ""}${sanPham.DaAn ? (quyen.coKhoiPhuc ? `<button class="rounded-md border border-emerald-800 px-2.5 py-1.5 text-[13.2px] font-semibold text-emerald-300 hover:bg-emerald-950/40" data-khoi-phuc-san-pham="${thoatHTML(sanPham.MaSP)}">Khôi phục</button>` : "") : (quyen.coAn ? `<button class="rounded-md border border-amber-800 px-2.5 py-1.5 text-[13.2px] font-semibold text-amber-300 hover:bg-amber-950/40" data-an-san-pham="${thoatHTML(sanPham.MaSP)}">Ẩn</button>` : "")}${quyen.coXoa ? `<button class="rounded-md p-1.5 text-red-300 hover:bg-red-950/40" data-xoa-san-pham="${thoatHTML(sanPham.MaSP)}" aria-label="Xóa ${thoatHTML(sanPham.TenSP)}">${taoIcon("trash-2")}</button>` : ""}</div></td>` : ""}</tr>`;
     })
     .join("")}</tbody></table></div>`;
 }
 
-function veBangDonHang(danhSach) {
-  return danhSach.length
-    ? `<div class="overflow-x-auto"><table class="w-full min-w-[700px] border-collapse text-left text-xs text-gray-300"><thead class="border-b border-[#1f332c] bg-[#0f1915] text-[12px] uppercase tracking-wider text-gray-400"><tr><th class="px-4 py-3 font-semibold">Mã hóa đơn</th><th class="px-4 py-3 font-semibold">Khách hàng</th><th class="px-4 py-3 font-semibold">Thời gian</th><th class="px-4 py-3 font-semibold">Phương thức</th><th class="px-4 py-3 text-right font-semibold">Tổng tiền</th><th class="px-4 py-3 text-center font-semibold">Trạng thái</th></tr></thead><tbody class="divide-y divide-[#1b2b25]">${danhSach
-        .map((don) => {
-          const trangThai = don.trangThai || "Chưa xác định";
-          const mauTrangThai = /hủy|hoàn trả/i.test(trangThai)
-            ? "border-red-800 bg-red-950/70 text-red-300"
-            : /hoàn tất|hoàn thành|đã giao/i.test(trangThai)
-              ? "border-emerald-800 bg-emerald-950/70 text-emerald-300"
-              : "border-amber-800 bg-amber-950/60 text-amber-300";
-          return `<tr class="st-order-row transition-colors hover:bg-[#182622]" data-search="${thoatHTML(`${don.MaHD} ${don.khach} ${don.Ngaylap} ${don.phuongThuc}`)}" data-status="${thoatHTML(trangThai)}"><td class="px-4 py-3 font-mono font-bold text-emerald-400">${thoatHTML(don.MaHD)}</td><td class="px-4 py-3 font-semibold text-white">${thoatHTML(don.khach || "—")}</td><td class="whitespace-nowrap px-4 py-3 text-gray-400">${thoatHTML(don.Ngaylap || "—")}</td><td class="px-4 py-3">${thoatHTML(don.phuongThuc || "—")}</td><td class="px-4 py-3 text-right font-mono font-bold text-emerald-300">${dinhDangTien(Number(don.tong || 0))}</td><td class="px-4 py-3 text-center"><span class="inline-flex rounded-full border px-2.5 py-1 text-[12px] font-semibold ${mauTrangThai}">${thoatHTML(trangThai)}</span></td></tr>`;
-        })
-        .join("")}</tbody></table></div>`
-    : `<div class="p-10 text-center text-sm text-gray-400"><strong class="block text-white">Chưa có hóa đơn</strong><span class="mt-1 block">Hóa đơn sẽ hiển thị khi có dữ liệu từ hệ thống.</span></div>`;
+function veBangDonHang(danhSach, choPhepCapNhat = false) {
+  if (!danhSach.length) {
+    return `<div class="p-10 text-center text-sm text-gray-400"><strong class="block text-white">Chưa có hóa đơn</strong><span class="mt-1 block">Đơn hàng sẽ hiển thị khi được tạo trong hệ thống.</span></div>`;
+  }
+
+  const chuyenTrangThai = {
+    cho_xac_nhan: ["dang_xu_ly", "da_huy"],
+    dang_xu_ly: ["dang_giao", "da_huy"],
+    dang_giao: ["hoan_thanh", "da_hoan_hang"],
+    hoan_thanh: ["da_hoan_hang"],
+  };
+  return `<div class="overflow-x-auto"><table class="w-full min-w-[950px] border-collapse text-left text-xs text-gray-300"><thead class="border-b border-[#1f332c] bg-[#0f1915] text-[12px] uppercase tracking-wider text-gray-400"><tr><th class="px-4 py-3 font-semibold">Mã hóa đơn</th><th class="px-4 py-3 font-semibold">Khách hàng</th><th class="px-4 py-3 font-semibold">Thời gian</th><th class="px-4 py-3 font-semibold">Phương thức</th><th class="px-4 py-3 text-right font-semibold">Tổng tiền</th><th class="px-4 py-3 text-center font-semibold">Trạng thái</th>${choPhepCapNhat ? '<th class="px-4 py-3 font-semibold">Thao tác</th>' : ""}</tr></thead><tbody class="divide-y divide-[#1b2b25]">${danhSach
+    .map((don) => {
+      const trangThai = don.trangThai || "";
+      const mauTrangThai = ["da_huy", "da_hoan_hang"].includes(trangThai)
+        ? "border-red-800 bg-red-950/70 text-red-300"
+        : trangThai === "hoan_thanh"
+          ? "border-emerald-800 bg-emerald-950/70 text-emerald-300"
+          : "border-amber-800 bg-amber-950/60 text-amber-300";
+      const cacTrangThaiTiepTheo = chuyenTrangThai[trangThai] || [];
+      const thaoTacTrangThai = choPhepCapNhat
+        ? cacTrangThaiTiepTheo.length
+          ? `<div class="flex items-center gap-2"><select class="max-w-40 rounded-md border border-[#30453b] bg-[#0f1915] px-2 py-2 text-[12px] text-gray-200" data-chon-trang-thai="${thoatHTML(don.MaHD)}" aria-label="Trạng thái mới cho đơn ${thoatHTML(don.MaHD)}">${cacTrangThaiTiepTheo.map((ma) => `<option value="${ma}">${nhanTrangThaiDonHang(ma)}</option>`).join("")}</select><button class="rounded-md bg-emerald-800 px-3 py-2 text-[12px] font-semibold text-white hover:bg-emerald-700" data-cap-nhat-trang-thai="${thoatHTML(don.MaHD)}">Lưu</button></div>`
+          : `<span class="text-[12px] text-gray-500">Trạng thái cuối</span>`
+        : "";
+      const thaoTacThanhToan = choPhepCapNhat
+        ? don.trangThaiThanhToan === "cho_hoan_tien"
+          ? `<button class="mt-2 text-[12px] font-semibold text-amber-300 hover:text-amber-200" data-cap-nhat-thanh-toan="${thoatHTML(don.MaHD)}" data-trang-thai-thanh-toan="da_hoan_tien">Xác nhận đã hoàn tiền</button>`
+          : don.phuongThuc === "bank_transfer" &&
+              don.trangThaiThanhToan === "cho_thanh_toan"
+            ? `<button class="mt-2 text-[12px] font-semibold text-emerald-300 hover:text-emerald-200" data-cap-nhat-thanh-toan="${thoatHTML(don.MaHD)}" data-trang-thai-thanh-toan="da_thanh_toan">Xác nhận đã nhận tiền</button>`
+            : ""
+        : "";
+      return `<tr class="st-order-row transition-colors hover:bg-[#182622]" data-search="${thoatHTML(`${don.MaHD} ${don.khach} ${don.Ngaylap} ${don.phuongThuc}`)}" data-status="${thoatHTML(trangThai)}"><td class="px-4 py-3 font-mono font-bold text-emerald-400">${thoatHTML(don.MaHD)}</td><td class="px-4 py-3 font-semibold text-white">${thoatHTML(don.khach || "—")}</td><td class="whitespace-nowrap px-4 py-3 text-gray-400">${thoatHTML(don.Ngaylap || "—")}</td><td class="px-4 py-3">${nhanPhuongThucThanhToan(don.phuongThuc)}</td><td class="px-4 py-3 text-right font-mono font-bold text-emerald-300">${dinhDangTien(don.tong || 0)}</td><td class="px-4 py-3 text-center"><span class="inline-flex rounded-full border px-2.5 py-1 text-[12px] font-semibold ${mauTrangThai}">${nhanTrangThaiDonHang(trangThai)}</span><span class="mt-1 block text-[12px] text-gray-400">${nhanTrangThaiThanhToan(don.trangThaiThanhToan)}</span></td>${choPhepCapNhat ? `<td class="px-4 py-3">${thaoTacTrangThai}${thaoTacThanhToan}</td>` : ""}</tr>`;
+    })
+    .join("")}</tbody></table></div>`;
 }
 
 function veBangNguoiDung() {
@@ -1402,16 +1689,18 @@ function veBangNguoiDung() {
     admin: "Admin",
   };
   return duLieuQuanTri.taiKhoan.length
-    ? `<div class="overflow-x-auto"><table class="w-full min-w-[620px] border-collapse text-left text-xs text-gray-300"><thead class="border-b border-[#1f332c] bg-[#0f1915] text-[12px] uppercase tracking-wider text-gray-400"><tr><th class="px-4 py-3 font-semibold">Mã tài khoản</th><th class="px-4 py-3 font-semibold">Tên tài khoản</th><th class="px-4 py-3 font-semibold">Vai trò</th><th class="px-4 py-3 font-semibold">Bảo mật</th></tr></thead><tbody class="divide-y divide-[#1b2b25]">${duLieuQuanTri.taiKhoan
+    ? `<div class="overflow-x-auto"><table class="w-full min-w-[620px] border-collapse text-left text-xs text-gray-300"><thead class="border-b border-[#1f332c] bg-[#0f1915] text-[12px] uppercase tracking-wider text-gray-400"><tr><th class="px-4 py-3 font-semibold">Mã tài khoản</th><th class="px-4 py-3 font-semibold">Tên tài khoản</th><th class="px-4 py-3 font-semibold">Vai trò</th><th class="px-4 py-3 font-semibold">Trạng thái</th><th class="px-4 py-3 text-right font-semibold">Thao tác</th></tr></thead><tbody class="divide-y divide-[#1b2b25]">${duLieuQuanTri.taiKhoan
         .map((taiKhoan) => {
           const role = taiKhoan.VaiTro || "";
+          const hoatDong = taiKhoan.TrangThai !== false;
+          const laToi = taiKhoan.MaTK === duLieuLuu.taiKhoan?.id;
           const roleColor =
             role === "admin"
               ? "border-emerald-800 bg-emerald-950/70 text-emerald-300"
               : role === "nhan_vien"
                 ? "border-amber-800 bg-amber-950/60 text-amber-300"
                 : "border-[#35443c] bg-[#1a2520] text-gray-300";
-          return `<tr class="st-account-row-item transition-colors hover:bg-[#182622]" data-search="${thoatHTML(`${taiKhoan.MaTK} ${taiKhoan.TenTK} ${role}`)}" data-role="${thoatHTML(role)}"><td class="px-4 py-3 font-mono font-semibold text-white">${thoatHTML(taiKhoan.MaTK)}</td><td class="px-4 py-3"><span class="flex items-center gap-2 font-semibold text-white"><span class="grid h-8 w-8 place-items-center rounded-full bg-[#1e332d] text-emerald-300">${taoIcon("user-round")}</span>${thoatHTML(taiKhoan.TenTK)}</span></td><td class="px-4 py-3"><span class="rounded-full border px-2.5 py-1 text-[12px] font-semibold ${roleColor}">${tenVaiTro[role] || thoatHTML(role || "Chưa xác định")}</span></td><td class="px-4 py-3 text-gray-400">${taoIcon("shield-check")} Được bảo vệ trên máy chủ</td></tr>`;
+          return `<tr class="st-account-row-item transition-colors hover:bg-[#182622]" data-search="${thoatHTML(`${taiKhoan.MaTK} ${taiKhoan.TenTK} ${role}`)}" data-role="${thoatHTML(role)}"><td class="px-4 py-3 font-mono font-semibold text-white">${thoatHTML(taiKhoan.MaTK)}</td><td class="px-4 py-3"><span class="flex items-center gap-2 font-semibold text-white"><span class="grid h-8 w-8 place-items-center rounded-full bg-[#1e332d] text-emerald-300">${taoIcon("user-round")}</span>${thoatHTML(taiKhoan.TenTK)}</span></td><td class="px-4 py-3"><span class="rounded-full border px-2.5 py-1 text-[12px] font-semibold ${roleColor}">${tenVaiTro[role] || thoatHTML(role || "Chưa xác định")}</span></td><td class="px-4 py-3">${hoatDong ? '<span class="rounded-full border border-emerald-800 bg-emerald-950/60 px-2.5 py-1 text-[12px] font-semibold text-emerald-300">Hoạt động</span>' : '<span class="rounded-full border border-red-800 bg-red-950/60 px-2.5 py-1 text-[12px] font-semibold text-red-300">Đã khóa</span>'}</td><td class="px-4 py-3 text-right">${laToi ? '<span class="text-[12px] text-gray-500">Tài khoản của bạn</span>' : `<div class="inline-flex items-center gap-2"><select class="rounded-md border border-[#30453b] bg-[#0f1915] px-2 py-1.5 text-[13.2px] text-gray-200" data-doi-vai-tro="${thoatHTML(taiKhoan.MaTK)}" aria-label="Đổi vai trò"><option value="khach_hang" ${role === "khach_hang" ? "selected" : ""}>Khách hàng</option><option value="nhan_vien" ${role === "nhan_vien" ? "selected" : ""}>Nhân viên</option><option value="admin" ${role === "admin" ? "selected" : ""}>Admin</option></select><button class="rounded-md border border-[#30453b] px-2.5 py-1.5 text-[13.2px] font-semibold ${hoatDong ? "text-red-300 hover:bg-red-950/40" : "text-emerald-300 hover:bg-emerald-950/40"}" data-khoa-tai-khoan="${thoatHTML(taiKhoan.MaTK)}" data-hoat-dong="${hoatDong ? "0" : "1"}">${hoatDong ? "Khóa" : "Mở khóa"}</button></div>`}</td></tr>`;
         })
         .join("")}</tbody></table></div>`
     : `<div class="p-10 text-center text-sm text-gray-400"><strong class="block text-white">${dangTaiDuLieuQuanTri ? "Đang tải tài khoản" : "Chưa có tài khoản"}</strong><span class="mt-1 block">${dangTaiDuLieuQuanTri ? "Đang kết nối API quản trị." : "Chưa có dữ liệu tài khoản trong hệ thống."}</span></div>`;
@@ -1423,28 +1712,45 @@ function veBangBenh() {
     : `<div class="rounded-lg border border-dashed border-[#35443c] bg-[#101915] p-10 text-center text-sm text-gray-400"><strong class="block text-white">Chưa có dữ liệu bệnh cây</strong><span class="mt-1 block">Nội dung tham khảo chưa được kết nối với API trong hệ thống.</span></div>`;
 }
 
+// =============================================================================
+// LUỒNG XỬ LÝ THÊM SẢN PHẨM VÀO GIỎ HÀNG
+// =============================================================================
 function themVaoGio(maSanPham) {
+  // 1. Kiểm tra sản phẩm có tồn tại và còn hàng trong kho hay không
   const sanPham = duLieuLuu.sanPham.find((mon) => mon.MaSP === maSanPham);
   if (!sanPham || sanPham.Soluong < 1)
     return hienThongBao("Sản phẩm hiện không đủ tồn kho.");
+  
+  // 2. Tìm xem sản phẩm đã có sẵn trong giỏ hàng chưa
   const monTrongGio = duLieuLuu.gioHang.find((mon) => mon.MaSP === maSanPham);
   if (monTrongGio)
+    // Nếu có rồi thì tăng số lượng lên 1 (không vượt quá số lượng tồn kho)
     monTrongGio.soLuong = Math.min(monTrongGio.soLuong + 1, sanPham.Soluong);
-  else duLieuLuu.gioHang.push({ MaSP: maSanPham, soLuong: 1 });
+  else 
+    // Nếu chưa có thì đưa sản phẩm mới vào giỏ với số lượng là 1
+    duLieuLuu.gioHang.push({ MaSP: maSanPham, soLuong: 1 });
+  
+  // 3. Lưu lại giỏ hàng vào bộ nhớ và thông báo cho người dùng
   luuDuLieu();
   hienThongBao("Đã thêm sản phẩm vào giỏ hàng.");
 }
 
+// =============================================================================
+// LUỒNG ĐIỀU KHIỂN ĐÓNG / MỞ NĂNG TRƯỢT GIỎ HÀNG (DRAWER)
+// =============================================================================
 function moGioHang() {
+  // Mở lớp phủ nền mờ và ngăn trượt giỏ hàng từ cạnh phải
   document.getElementById("lopPhu").classList.add("dang-mo");
   document.getElementById("nganGio").classList.add("dang-mo");
   document.getElementById("nganGio").setAttribute("aria-hidden", "false");
   document.getElementById("lopPhu").setAttribute("aria-hidden", "false");
+  // Vẽ lại danh sách mặt hàng trong giỏ
   veGioHang();
   document.getElementById("nutDongGio").focus();
 }
 
 function dongGioHang() {
+  // Đóng lớp phủ và ẩn ngăn giỏ hàng
   document.getElementById("lopPhu").classList.remove("dang-mo");
   document.getElementById("nganGio").classList.remove("dang-mo");
   document.getElementById("nganGio").setAttribute("aria-hidden", "true");
@@ -1452,23 +1758,30 @@ function dongGioHang() {
   document.getElementById("nutMoGio").focus();
 }
 
+// =============================================================================
+// LUỒNG HIỂN THỊ CHI TIẾT DANH SÁCH MẶT HÀNG TRONG NGĂN GIỎ HÀNG
+// =============================================================================
 function veGioHang() {
   const noiDung = document.getElementById("noiDungGio");
+  // Kết nối từng món trong giỏ hàng với danh mục sản phẩm để lấy giá và hình ảnh
   const cacMon = duLieuLuu.gioHang
     .map((mon) => ({
       ...mon,
       sanPham: duLieuLuu.sanPham.find((sp) => sp.MaSP === mon.MaSP),
     }))
     .filter((mon) => mon.sanPham);
+  // Tính tổng số tiền tạm tính của giỏ hàng
   const tongTien = cacMon.reduce(
     (tong, mon) => tong + mon.sanPham.Giaban * mon.soLuong,
     0,
   );
+  // Nếu giỏ hàng trống thì hiển thị trạng thái trống
   if (!cacMon.length) {
     noiDung.innerHTML = `<div class="flex flex-col items-center gap-2 py-12 text-center"><span class="material-symbols-outlined text-3xl text-gray-500">shopping_bag</span><strong class="text-sm text-white">Giỏ hàng đang trống</strong><span class="text-xs text-gray-400">Thêm sản phẩm để bắt đầu đơn hàng.</span><button class="mt-2 text-xs font-semibold text-emerald-300" data-xem="cua-hang">Tiếp tục mua sắm</button></div>`;
     veIcon();
     return;
   }
+  // Hiển thị danh sách từng món, số lượng, thành tiền và nút chuyển đến trang thanh toán
   noiDung.innerHTML = `<div class="space-y-4">${cacMon.map((mon) => `<article class="flex items-center gap-3 border-b border-[#3f493f]/60 pb-3 last:border-0">${mon.sanPham.anh ? `<img class="h-14 w-14 rounded-lg border border-[#3f493f] bg-[#18211e] object-contain p-1" src="${thoatHTML(mon.sanPham.anh)}" alt="" loading="lazy">` : `<span class="grid h-14 w-14 place-items-center rounded-lg border border-[#3f493f] bg-[#18211e] text-emerald-300">${taoIcon(iconTheoDanhMuc(mon.sanPham))}</span>`}<div class="min-w-0 flex-1"><strong class="block truncate text-xs text-gray-100">${thoatHTML(mon.sanPham.TenSP)}</strong><span class="mt-1 block text-[12px] text-gray-400">${mon.soLuong} × ${dinhDangTien(mon.sanPham.Giaban)}</span></div><strong class="text-xs text-emerald-300">${dinhDangTien(Number(mon.sanPham.Giaban) * mon.soLuong)}</strong></article>`).join("")}<div class="flex items-center justify-between border-t border-[#3f493f] pt-3"><span class="text-xs text-gray-400">Tạm tính</span><strong class="text-sm font-bold text-white">${dinhDangTien(tongTien)}</strong></div><button class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 text-xs font-bold text-white hover:bg-emerald-600" data-xem="gio-hang">Xem giỏ hàng &amp; thanh toán ${taoIcon("arrow-right")}</button></div>`;
   veIcon();
 }
@@ -1497,13 +1810,78 @@ function veThanhToan() {
       <section class="space-y-5 lg:col-span-8"><div class="overflow-hidden rounded-xl border border-[#3f493f] bg-[#141d1a]"><div class="flex flex-wrap items-center justify-between gap-3 border-b border-[#3f493f] bg-[#18211e] p-4"><div><h1 class="text-base font-bold text-white">Giỏ hàng của bạn</h1><p class="mt-1 text-xs text-gray-400">${cacMon.length} mặt hàng · ${soSanPham} sản phẩm</p></div><button class="inline-flex min-h-10 items-center gap-2 text-xs font-semibold text-emerald-300 hover:text-emerald-200" data-xem="cua-hang">${taoIcon("arrow-left")} Tiếp tục mua hàng</button></div>
       ${cacMon.map((mon) => `<article class="flex flex-col items-start justify-between gap-4 border-b border-[#3f493f]/60 p-4 last:border-b-0 sm:flex-row sm:items-center"><div class="flex min-w-0 w-full items-center gap-3 sm:flex-1">${mon.sanPham.anh ? `<img class="h-16 w-16 shrink-0 rounded-lg border border-[#3f493f] bg-[#18211e] object-contain p-1 sm:h-20 sm:w-20" src="${thoatHTML(mon.sanPham.anh)}" alt="${thoatHTML(mon.sanPham.TenSP)}" loading="lazy">` : `<span class="grid h-16 w-16 shrink-0 place-items-center rounded-lg border border-[#3f493f] bg-[#18211e] text-emerald-300 sm:h-20 sm:w-20">${taoIcon(iconTheoDanhMuc(mon.sanPham))}</span>`}<div class="min-w-0"><span class="block truncate text-[10.8px] font-bold uppercase tracking-wider text-gray-500">${thoatHTML(mon.sanPham.TenNCC || "Nhà cung cấp chưa có thông tin")}</span><h2 class="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-gray-100">${thoatHTML(mon.sanPham.TenSP)}</h2><p class="mt-1 text-xs text-gray-400">${thoatHTML(mon.sanPham.DviTinh)} <span class="text-gray-600">·</span> <span class="text-emerald-300">${dinhDangTien(mon.sanPham.Giaban)}</span></p></div></div><div class="flex w-full items-center justify-between gap-3 pl-[76px] sm:w-auto sm:pl-0"><div class="inline-flex h-9 items-center rounded-lg border border-[#3f493f] bg-[#18211e]"><button class="grid h-9 w-9 place-items-center text-gray-300 hover:text-emerald-300 disabled:opacity-40" data-giam-gio="${thoatHTML(mon.MaSP)}" aria-label="Giảm số lượng ${thoatHTML(mon.sanPham.TenSP)}" ${mon.soLuong <= 1 ? "disabled" : ""}>${taoIcon("minus")}</button><span class="min-w-8 text-center text-xs font-semibold text-white">${mon.soLuong}</span><button class="grid h-9 w-9 place-items-center text-gray-300 hover:text-emerald-300 disabled:opacity-40" data-tang-gio="${thoatHTML(mon.MaSP)}" aria-label="Tăng số lượng ${thoatHTML(mon.sanPham.TenSP)}" ${mon.soLuong >= mon.sanPham.Soluong ? "disabled" : ""}>${taoIcon("plus")}</button></div><strong class="min-w-[92px] text-right text-sm font-extrabold text-emerald-300">${dinhDangTien(Number(mon.sanPham.Giaban) * mon.soLuong)}</strong><button class="grid h-9 w-9 place-items-center rounded text-gray-500 hover:bg-red-950/30 hover:text-red-300" data-bo-gio="${thoatHTML(mon.MaSP)}" aria-label="Xóa ${thoatHTML(mon.sanPham.TenSP)} khỏi giỏ">${taoIcon("trash-2")}</button></div></article>`).join("")}</div>
       <form class="space-y-5" id="formThanhToan"><section class="rounded-xl border border-[#3f493f] bg-[#141d1a] p-4 sm:p-5"><div class="mb-4 border-b border-[#3f493f]/60 pb-3"><h2 class="text-base font-bold text-white">Thông tin nhận hàng</h2><p class="mt-1 text-xs text-gray-400">Điền thông tin người nhận cho đơn hàng.</p></div><div class="grid gap-4 sm:grid-cols-2"><div class="form-nhom"><label for="tenNhanHang">Họ và tên</label><input id="tenNhanHang" autocomplete="name" required value="${thoatHTML(duLieuLuu.taiKhoan ? duLieuLuu.taiKhoan.ten : "")}" placeholder="Tên người nhận"></div><div class="form-nhom"><label for="dienThoaiNhanHang">Số điện thoại</label><input id="dienThoaiNhanHang" type="tel" autocomplete="tel" inputmode="tel" required pattern="[0-9]{8,15}" placeholder="Số điện thoại chỉ gồm chữ số"></div><div class="form-nhom sm:col-span-2"><label for="diaChiNhanHang">Địa chỉ nhận hàng</label><input id="diaChiNhanHang" autocomplete="street-address" required placeholder="Số nhà, đường, phường/xã, tỉnh/thành phố"></div></div></section>
-      <section class="rounded-xl border border-[#3f493f] bg-[#141d1a] p-4 sm:p-5"><div class="mb-3 border-b border-[#3f493f]/60 pb-3"><h2 class="text-base font-bold text-white">Phương thức thanh toán</h2><p class="mt-1 text-xs text-gray-400">Chọn cách thanh toán cho đơn hàng.</p></div><fieldset class="space-y-2"><legend class="sr-only">Phương thức thanh toán</legend><label class="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-emerald-800/60 bg-emerald-950/20 px-3 text-xs text-gray-200"><input class="accent-emerald-500" type="radio" name="phuongThuc" value="Thanh toán khi nhận hàng" checked><span class="material-symbols-outlined text-emerald-300">payments</span><span>Thanh toán khi nhận hàng</span></label><label class="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-[#3f493f] px-3 text-xs text-gray-300"><input class="accent-emerald-500" type="radio" name="phuongThuc" value="Ví thử nghiệm"><span class="material-symbols-outlined text-gray-400">account_balance_wallet</span><span>Ví trực tuyến thử nghiệm</span></label></fieldset></section>
-      <p class="flex items-start gap-2 text-[13.2px] leading-5 text-gray-400"><span class="material-symbols-outlined text-base text-amber-300">info</span>Đây là quy trình đặt đơn thử nghiệm. Không phát sinh giao dịch thật; dữ liệu đơn được lưu trong phiên trình duyệt.</p></form>
+      <section class="rounded-xl border border-[#3f493f] bg-[#141d1a] p-4 sm:p-5"><div class="mb-3 border-b border-[#3f493f]/60 pb-3"><h2 class="text-base font-bold text-white">Phương thức thanh toán</h2><p class="mt-1 text-xs text-gray-400">Chọn cách thanh toán cho đơn hàng.</p></div><fieldset class="space-y-2" data-phuong-thuc-thanh-toan><legend class="sr-only">Phương thức thanh toán</legend></fieldset></section>
+      <p class="flex items-start gap-2 text-[13.2px] leading-5 text-gray-400"><span class="material-symbols-outlined text-base text-amber-300">info</span>Thông tin đơn hàng được xác nhận từ dữ liệu hệ thống.</p></form>
       </section>
-      <aside class="space-y-4 rounded-xl border border-[#3f493f] bg-[#141d1a] p-4 lg:sticky lg:top-24 lg:col-span-4 lg:p-5"><span class="text-[12px] font-bold uppercase tracking-wider text-emerald-300">Tóm tắt đơn hàng</span><h2 class="text-xl font-bold text-white">Chi phí dự kiến</h2><div class="space-y-3 border-y border-[#3f493f]/60 py-4"><div class="flex justify-between gap-3 text-xs text-gray-400"><span>Tạm tính (${soSanPham} sản phẩm)</span><strong class="text-gray-200">${dinhDangTien(tongTien)}</strong></div><div class="flex justify-between gap-3 text-xs text-gray-400"><span>Phí giao hàng</span><span>Chưa xác nhận</span></div></div><div class="flex items-center justify-between gap-3"><span class="text-sm font-bold text-gray-200">Tổng cộng</span><strong class="text-lg font-extrabold text-emerald-300">${dinhDangTien(tongTien)}</strong></div><button class="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 text-xs font-bold text-white hover:bg-emerald-600" type="submit" form="formThanhToan">${taoIcon("lock-keyhole")} Đặt đơn thử nghiệm</button><p class="flex items-start gap-2 text-[12px] leading-5 text-gray-500">${taoIcon("shield-check")} Phí giao hàng sẽ được xác nhận sau.</p></aside>
+      <aside class="space-y-4 rounded-xl border border-[#3f493f] bg-[#141d1a] p-4 lg:sticky lg:top-24 lg:col-span-4 lg:p-5"><span class="text-[12px] font-bold uppercase tracking-wider text-emerald-300">Tóm tắt đơn hàng</span><h2 class="text-xl font-bold text-white">Tổng tiền hàng</h2><div class="space-y-3 border-y border-[#3f493f]/60 py-4"><div class="flex justify-between gap-3 text-xs text-gray-400"><span>Tạm tính (${soSanPham} sản phẩm)</span><strong class="text-gray-200">${dinhDangTien(tongTien)}</strong></div><div class="flex justify-between gap-3 text-xs text-gray-400"><span>Phí giao hàng</span><span>Xác nhận riêng</span></div></div><div class="flex items-center justify-between gap-3"><span class="text-sm font-bold text-gray-200">Tổng tiền hàng</span><strong class="text-lg font-extrabold text-emerald-300">${dinhDangTien(tongTien)}</strong></div><button class="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 text-xs font-bold text-white hover:bg-emerald-600" type="submit" form="formThanhToan">${taoIcon("lock-keyhole")} Đặt hàng</button><p class="flex items-start gap-2 text-[12px] leading-5 text-gray-500">${taoIcon("shield-check")} Giá và tồn kho được kiểm tra trên máy chủ.</p></aside>
     </div>
   </div>`;
+  const laKhachHang = duLieuLuu.taiKhoan?.vaiTro === "khach_hang";
+  const fieldsetThanhToan = noiDung.querySelector(
+    "#formThanhToan [data-phuong-thuc-thanh-toan]",
+  );
+  if (fieldsetThanhToan) {
+    fieldsetThanhToan.innerHTML = cacPhuongThucThanhToan
+      .map((phuongThuc, viTri) => {
+        const laChuyenKhoan = phuongThuc.ma === "bank_transfer";
+        const huongDan = laChuyenKhoan
+          ? `<span class="ml-8 block pb-3 text-[12px] leading-5 text-gray-400">${thoatHTML(phuongThuc.nganHang)} · ${thoatHTML(phuongThuc.soTaiKhoan)}<br>Chủ tài khoản: ${thoatHTML(phuongThuc.chuTaiKhoan)}<br>Nội dung chuyển khoản sẽ được cấp sau khi đặt hàng.</span>`
+          : "";
+        return `<label class="block rounded-lg border ${viTri === 0 ? "border-emerald-800/60 bg-emerald-950/20" : "border-[#3f493f]"} px-3 text-xs text-gray-200"><span class="flex min-h-12 cursor-pointer items-center gap-3"><input class="accent-emerald-500" type="radio" name="phuongThuc" value="${thoatHTML(phuongThuc.ma)}" ${viTri === 0 ? "checked" : ""}><span class="material-symbols-outlined text-emerald-300">${laChuyenKhoan ? "account_balance" : "payments"}</span><span>${thoatHTML(phuongThuc.ten)}</span></span>${huongDan}</label>`;
+      })
+      .join("");
+  }
+  const ghiChuThanhToan = noiDung.querySelector("#formThanhToan > p");
+  if (ghiChuThanhToan) {
+    ghiChuThanhToan.textContent = laKhachHang
+      ? "Giá và tồn kho sẽ được kiểm tra lại trên máy chủ khi đặt hàng. Phí giao hàng được xác nhận riêng."
+      : "Bạn cần đăng nhập bằng tài khoản khách hàng để đặt hàng. Giỏ hàng sẽ được giữ nguyên.";
+  }
+  const nutDatHang = noiDung.querySelector(
+    'button[form="formThanhToan"]',
+  );
+  if (nutDatHang) {
+    if (laKhachHang) {
+      nutDatHang.textContent = dangTaoDonHang ? "Đang tạo đơn hàng..." : "Đặt hàng";
+      nutDatHang.disabled = dangTaoDonHang;
+    } else if (duLieuLuu.taiKhoan === null) {
+      nutDatHang.type = "button";
+      nutDatHang.id = "nutMoDangNhap";
+      nutDatHang.innerHTML = `${taoIcon("log-in")} Đăng nhập để đặt hàng`;
+    } else {
+      nutDatHang.type = "button";
+      nutDatHang.disabled = true;
+      nutDatHang.textContent = "Chỉ tài khoản khách hàng được đặt hàng";
+    }
+  }
   veIcon();
+}
+
+function capNhatHienThiGioHang() {
+  if (trangHienTai !== "gio-hang") {
+    veGioHang();
+    return;
+  }
+
+  const form = document.getElementById("formThanhToan");
+  const duLieu = form
+    ? {
+        ten: document.getElementById("tenNhanHang")?.value || "",
+        soDienThoai: document.getElementById("dienThoaiNhanHang")?.value || "",
+        diaChi: document.getElementById("diaChiNhanHang")?.value || "",
+        phuongThuc: new FormData(form).get("phuongThuc"),
+      }
+    : null;
+  veThanhToan();
+  if (duLieu && document.getElementById("formThanhToan")) {
+    document.getElementById("tenNhanHang").value = duLieu.ten;
+    document.getElementById("dienThoaiNhanHang").value = duLieu.soDienThoai;
+    document.getElementById("diaChiNhanHang").value = duLieu.diaChi;
+    const phuongThuc = [...document.querySelectorAll(
+      '#formThanhToan input[name="phuongThuc"]',
+    )].find((oInput) => oInput.value === duLieu.phuongThuc);
+    if (phuongThuc) phuongThuc.checked = true;
+  }
 }
 
 function capNhatSoLuongGio(maSanPham, thayDoi) {
@@ -1518,7 +1896,7 @@ function capNhatSoLuongGio(maSanPham, thayDoi) {
   else if (monTrongGio.soLuong > sanPham.Soluong)
     monTrongGio.soLuong = sanPham.Soluong;
   luuDuLieu();
-  veGioHang();
+  capNhatHienThiGioHang();
 }
 
 function taoOInputMatKhau(
@@ -1881,8 +2259,19 @@ async function xuLyDangNhap(suKien) {
 
     if (phanHoi.nguoiDung) {
       duLieuLuu.taiKhoan = phanHoi.nguoiDung;
+      try {
+        localStorage.setItem(
+          KHOA_TAI_KHOAN_GAN_NHAT,
+          phanHoi.nguoiDung.id || phanHoi.nguoiDung.tenTaiKhoan || "",
+        );
+      } catch {}
+      duLieuLuu.donHang = [];
+      daTaiDonHang = false;
+      loiTaiDonHang = false;
       tokenCsrf = phanHoi.csrfToken;
       capNhatGiaoDienTaiKhoan();
+      // Đồng bộ nạp và gộp giỏ hàng cho tài khoản vừa đăng nhập
+      dongBoGioHangKhiDangNhap(phanHoi.nguoiDung);
     }
 
     clearInterval(boDemGuiOtp);
@@ -1911,8 +2300,22 @@ async function xuLyDangNhap(suKien) {
   }
 }
 
-function xuLyDatHang(suKien) {
+// =============================================================================
+// LUỒNG XỬ LÝ ĐẶT HÀNG (CHECKOUT & SUBMIT ORDER TO API)
+// =============================================================================
+async function xuLyDatHang(suKien) {
+  // 1. Ngăn chặn hành vi gửi form mặc định làm reload trang
   suKien.preventDefault();
+  if (dangTaoDonHang) return;
+
+  // 2. Kiểm tra vai trò: Bắt buộc tài khoản khách hàng mới được phép đặt hàng
+  if (duLieuLuu.taiKhoan?.vaiTro !== "khach_hang") {
+    hienThongBao("Đăng nhập bằng tài khoản khách hàng để đặt hàng.");
+    if (duLieuLuu.taiKhoan === null) moHopTaiKhoan("dang-nhap");
+    return;
+  }
+
+  // 3. Kết nối các mặt hàng trong giỏ với danh mục sản phẩm để kiểm tra số lượng và tồn kho
   const cacMon = duLieuLuu.gioHang
     .map((mon) => ({
       ...mon,
@@ -1922,51 +2325,66 @@ function xuLyDatHang(suKien) {
   if (!cacMon.length) return hienThongBao("Giỏ hàng đang trống.");
   if (cacMon.some((mon) => mon.soLuong > mon.sanPham.Soluong))
     return hienThongBao("Một sản phẩm không còn đủ số lượng tồn.");
-  const phuongThuc = new FormData(suKien.target).get("phuongThuc");
-  const tongTien = cacMon.reduce(
-    (tong, mon) => tong + mon.sanPham.Giaban * mon.soLuong,
-    0,
+
+  // 4. Thu thập thông tin giao hàng và danh sách dòng hàng từ form
+  const form = suKien.target;
+  const nutDatHang = document.querySelector(
+    'button[form="formThanhToan"]',
   );
-  const ten = document.getElementById("tenNhanHang").value.trim();
-  const soDienThoai = document.getElementById("dienThoaiNhanHang").value.trim();
-  const diaChiGiao = document.getElementById("diaChiNhanHang").value.trim();
-  const maHoaDon = String(Date.now()).slice(-6);
-  const donMoi = {
-    MaHD: maHoaDon,
-    Ngaylap: new Date().toISOString().slice(0, 10),
-    MaKH: null,
-    MaNv: null,
-    khach: ten,
-    soDienThoai,
-    diaChiGiao,
-    tenTaiKhoan: duLieuLuu.taiKhoan?.tenTaiKhoan,
-    tong: tongTien,
-    trangThai: "Đang xử lý",
-    phuongThuc,
+  const duLieu = new FormData(form);
+  const donHang = {
+    tenNguoiNhan: document.getElementById("tenNhanHang").value.trim(),
+    soDienThoai: document.getElementById("dienThoaiNhanHang").value.trim(),
+    diaChiGiao: document.getElementById("diaChiNhanHang").value.trim(),
+    phuongThucThanhToan: String(duLieu.get("phuongThuc") || ""),
     dongHang: cacMon.map((mon) => ({
-      MaHD: maHoaDon,
-      MaSP: mon.sanPham.MaSP,
-      TenSP: mon.sanPham.TenSP,
-      SlBan: mon.soLuong,
-      GiaBan: mon.sanPham.Giaban,
-      Giamgia: 0,
-      TongHD: mon.sanPham.Giaban * mon.soLuong,
-      DviTinh: mon.sanPham.DviTinh,
+      MaSP: mon.MaSP,
+      SlBan: Number(mon.soLuong),
     })),
   };
-  cacMon.forEach((mon) => {
-    mon.sanPham.Soluong -= mon.soLuong;
-  });
-  duLieuLuu.donHang.unshift(donMoi);
-  duLieuLuu.gioHang = [];
-  luuDuLieu();
-  dongGioHang();
-  chuyenTrang("don-hang");
-  hienThongBao(
-    phuongThuc === "Ví thử nghiệm"
-      ? "Thanh toán mô phỏng thành công, đơn đã được tạo."
-      : "Đơn hàng thử nghiệm đã được tạo.",
-  );
+
+  // 5. Khóa nút bấm và đổi trạng thái giao diện tránh việc bấm đặt trùng lặp
+  dangTaoDonHang = true;
+  if (nutDatHang) {
+    nutDatHang.disabled = true;
+    nutDatHang.textContent = "Đang tạo đơn hàng...";
+  }
+
+  try {
+    // 6. Gửi request POST /api/don-hang lên máy chủ để xác thực và lưu vào MySQL
+    const phanHoi = await goiApi("/api/don-hang", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(donHang),
+    });
+    if (!phanHoi?.donHang?.MaHD) {
+      throw new TypeError("Máy chủ không trả về mã đơn hàng hợp lệ.");
+    }
+
+    // 7. Cập nhật trạng thái sau khi đặt hàng thành công:
+    // Thêm đơn hàng mới vào danh sách đơn của tôi
+    duLieuLuu.donHang = [phanHoi.donHang, ...duLieuLuu.donHang];
+    // Làm sạch giỏ hàng và cập nhật số hiển thị về 0
+    duLieuLuu.gioHang = [];
+    daTaiDonHang = true;
+    capNhatSoGio();
+    luuDuLieu();
+    // Tải lại danh sách sản phẩm để cập nhật tồn kho mới nhất từ máy chủ
+    void taiSanPham();
+    // Chuyển hướng giao diện về màn hình Quản lý đơn hàng
+    chuyenTrang("don-hang");
+    hienThongBao(`Đã tạo đơn hàng #${phanHoi.donHang.MaHD}.`);
+  } catch (loi) {
+    console.error("Không thể tạo đơn hàng.", loi);
+    hienThongBao(loi.message || "Không thể tạo đơn hàng. Giỏ hàng vẫn được giữ lại.");
+  } finally {
+    // 8. Mở khóa nút bấm hoàn tất tiến trình
+    dangTaoDonHang = false;
+    if (form.isConnected && nutDatHang) {
+      nutDatHang.disabled = false;
+      nutDatHang.textContent = "Đặt hàng";
+    }
+  }
 }
 
 function hienBaiViet(maBai) {
@@ -2048,6 +2466,53 @@ async function hienChiTietSanPham(maSanPham) {
 }
 
 document.addEventListener("click", async (suKien) => {
+  const nutCapNhatTrangThai = suKien.target.closest(
+    "[data-cap-nhat-trang-thai]",
+  );
+  if (nutCapNhatTrangThai) {
+    const maHD = nutCapNhatTrangThai.dataset.capNhatTrangThai;
+    const trangThai = nutCapNhatTrangThai
+      .closest("tr")
+      ?.querySelector("[data-chon-trang-thai]")?.value;
+    if (!trangThai) return;
+    if (
+      trangThai === "da_hoan_hang" &&
+      !window.confirm(
+        "Chỉ xác nhận đã hoàn hàng khi cửa hàng đã nhận lại sản phẩm. Tồn kho sẽ được cộng lại.",
+      )
+    ) {
+      return;
+    }
+    if (
+      trangThai === "da_huy" &&
+      !window.confirm("Hủy đơn hàng và hoàn lại số lượng vào tồn kho?")
+    ) {
+      return;
+    }
+    await capNhatDonHangQuanTri(maHD, { trangThai });
+    return;
+  }
+  const nutCapNhatThanhToan = suKien.target.closest(
+    "[data-cap-nhat-thanh-toan]",
+  );
+  if (nutCapNhatThanhToan) {
+    const trangThaiThanhToan =
+      nutCapNhatThanhToan.dataset.trangThaiThanhToan;
+    const thongDiep =
+      trangThaiThanhToan === "da_hoan_tien"
+        ? "Xác nhận cửa hàng đã thực hiện hoàn tiền cho khách?"
+        : "Xác nhận cửa hàng đã đối soát khoản chuyển khoản này?";
+    if (!window.confirm(thongDiep)) return;
+    await capNhatDonHangQuanTri(
+      nutCapNhatThanhToan.dataset.capNhatThanhToan,
+      { trangThaiThanhToan },
+    );
+    return;
+  }
+  if (suKien.target.closest("[data-tai-don-hang]")) {
+    await taiDonHang(true);
+    return;
+  }
   if (suKien.target.closest("#nutXoaNhanhTimKiem")) {
     oTimKiem.value = "";
     capNhatNutXoaTimKiem();
@@ -2218,11 +2683,12 @@ document.addEventListener("click", async (suKien) => {
         mon.MaSP !== suKien.target.closest("[data-bo-gio]").dataset.boGio,
     );
     luuDuLieu();
-    return veGioHang();
+    return capNhatHienThiGioHang();
   }
   const nutTab = suKien.target.closest("[data-tab-quan-tri]");
   if (nutTab) {
     tabQuanTri = nutTab.dataset.tabQuanTri;
+    if (tabQuanTri === "nhat-ky") taiNhatKy();
     return veQuanTri();
   }
   if (suKien.target.closest("[data-lam-moi-san-pham]")) {
@@ -2233,6 +2699,7 @@ document.addEventListener("click", async (suKien) => {
     return;
   }
   if (suKien.target.closest("#nutThemSanPham")) {
+    if (!coQuyenUI("san_pham.them")) return;
     maSanPhamDangSua = "";
     return veQuanTri();
   }
@@ -2243,12 +2710,17 @@ document.addEventListener("click", async (suKien) => {
   }
   const nutSuaSanPham = suKien.target.closest("[data-sua-san-pham]");
   if (nutSuaSanPham) {
+    if (!coQuyenUI("san_pham.sua")) return;
     maSanPhamDangSua = nutSuaSanPham.dataset.suaSanPham;
     return veQuanTri();
   }
   const nutXoaSanPham = suKien.target.closest("[data-xoa-san-pham]");
   if (nutXoaSanPham) {
     const maSP = nutXoaSanPham.dataset.xoaSanPham;
+    if (!coQuyenUI("san_pham.xoa")) {
+      hienThongBao("Chỉ quản trị viên mới được xóa vĩnh viễn sản phẩm.");
+      return;
+    }
     if (
       !window.confirm(`Xóa sản phẩm ${maSP}? Thao tác này không thể hoàn tác.`)
     )
@@ -2266,6 +2738,48 @@ document.addEventListener("click", async (suKien) => {
       console.error("Không thể xóa sản phẩm.", loi);
       hienThongBao(loi.message || "Không thể xóa sản phẩm.");
     }
+    return;
+  }
+  const nutAnSanPham = suKien.target.closest(
+    "[data-an-san-pham], [data-khoi-phuc-san-pham]",
+  );
+  if (nutAnSanPham) {
+    const khoiPhuc = nutAnSanPham.hasAttribute("data-khoi-phuc-san-pham");
+    const maSP = khoiPhuc
+      ? nutAnSanPham.dataset.khoiPhucSanPham
+      : nutAnSanPham.dataset.anSanPham;
+    try {
+      await goiApi(
+        `/api/san-pham/${encodeURIComponent(maSP)}/${khoiPhuc ? "khoi-phuc" : "an"}`,
+        { method: "POST" },
+      );
+      dangTaiSanPham = true;
+      await taiSanPham();
+      hienThongBao(
+        khoiPhuc ? "Đã khôi phục sản phẩm." : "Đã ẩn sản phẩm khỏi cửa hàng.",
+      );
+    } catch (loi) {
+      hienThongBao(loi.message || "Không thể cập nhật sản phẩm.");
+    }
+    return;
+  }
+  const nutKhoaTaiKhoan = suKien.target.closest("[data-khoa-tai-khoan]");
+  if (nutKhoaTaiKhoan) {
+    const hoatDong = nutKhoaTaiKhoan.dataset.hoatDong === "1";
+    const maTK = nutKhoaTaiKhoan.dataset.khoaTaiKhoan;
+    if (!window.confirm(`${hoatDong ? "Mở khóa" : "Khóa"} tài khoản ${maTK}?`))
+      return;
+    try {
+      await goiApi(`/api/tai-khoan/${encodeURIComponent(maTK)}/trang-thai`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hoatDong }),
+      });
+      hienThongBao(hoatDong ? "Đã mở khóa tài khoản." : "Đã khóa tài khoản.");
+    } catch (loi) {
+      hienThongBao(loi.message || "Không thể cập nhật tài khoản.");
+    }
+    await lamMoiDuLieuQuanTri();
     return;
   }
   const nutDoiNguoi = suKien.target.closest("[data-doi-nguoi-dung]");
@@ -2295,6 +2809,13 @@ document.addEventListener("click", async (suKien) => {
       });
       tokenCsrf = phanHoi.csrfToken;
       duLieuLuu.taiKhoan = null;
+      try {
+        localStorage.removeItem(KHOA_TAI_KHOAN_GAN_NHAT);
+      } catch {}
+      // Chuyển sang giỏ hàng khách
+      dongBoGioHangKhiDangXuat();
+      duLieuLuu.donHang = [];
+      daTaiDonHang = false;
       capNhatGiaoDienTaiKhoan();
       if (vaiTroYeuCau) {
         window.location.assign("/index.html");
@@ -2497,6 +3018,87 @@ if (oHopSanPham) {
   });
 }
 
+let duLieuNhatKy = [];
+let dangTaiNhatKy = false;
+let loiNhatKy = false;
+
+async function lamMoiDuLieuQuanTri() {
+  daTaiDuLieuQuanTri = false;
+  await taiDuLieuQuanTri();
+}
+
+async function taiNhatKy() {
+  if (dangTaiNhatKy) return;
+  dangTaiNhatKy = true;
+  loiNhatKy = false;
+  try {
+    const duLieu = await goiApi("/api/nhat-ky");
+    duLieuNhatKy = Array.isArray(duLieu.nhatKy) ? duLieu.nhatKy : [];
+  } catch (loi) {
+    loiNhatKy = true;
+    console.error("Không thể tải nhật ký hoạt động.", loi);
+  } finally {
+    dangTaiNhatKy = false;
+    if (trangHienTai === "quan-tri" && tabQuanTri === "nhat-ky") {
+      veQuanTri();
+      veIcon();
+    }
+  }
+}
+
+function veNhatKy() {
+  if (dangTaiNhatKy)
+    return `<div class="rounded-xl border border-[#213831] bg-[#14201c] p-8 text-center text-sm text-gray-400">Đang tải nhật ký...</div>`;
+  if (loiNhatKy)
+    return `<div class="rounded-xl border border-[#213831] bg-[#14201c] p-8 text-center text-sm text-red-300" role="alert">Không thể tải nhật ký hoạt động.</div>`;
+  const hang = duLieuNhatKy
+    .map(
+      (m) =>
+        `<tr><td class="px-4 py-3 font-mono text-gray-400">${thoatHTML(m.ThoiGian)}</td><td class="px-4 py-3 font-semibold text-white">${thoatHTML(m.TenTK || "(đã xóa)")} <small class="text-gray-500">${thoatHTML(m.VaiTro || "")}</small></td><td class="px-4 py-3 text-emerald-300">${thoatHTML(m.HanhDong)}</td><td class="px-4 py-3">${thoatHTML(m.DoiTuong)} ${thoatHTML(m.MaDoiTuong || "")}</td><td class="px-4 py-3 text-gray-400">${thoatHTML(m.ChiTiet || "")}</td></tr>`,
+    )
+    .join("");
+  return `<section class="overflow-hidden rounded-xl border border-[#213831] bg-[#14201c]"><div class="overflow-x-auto"><table class="w-full min-w-[720px] border-collapse text-left text-xs text-gray-300"><thead class="border-b border-[#1f332c] bg-[#0f1915] text-[12px] uppercase tracking-wider text-gray-400"><tr><th class="px-4 py-3 font-semibold">Thời gian</th><th class="px-4 py-3 font-semibold">Người thực hiện</th><th class="px-4 py-3 font-semibold">Hành động</th><th class="px-4 py-3 font-semibold">Đối tượng</th><th class="px-4 py-3 font-semibold">Chi tiết</th></tr></thead><tbody class="divide-y divide-[#1b2b25]">${hang || '<tr><td class="px-4 py-8 text-center text-gray-400" colspan="5">Chưa có hoạt động nào được ghi.</td></tr>'}</tbody></table></div></section>`;
+}
+
+document.addEventListener("change", async (suKien) => {
+  const oChonVaiTro = suKien.target.closest?.("[data-doi-vai-tro]");
+  if (!oChonVaiTro) return;
+  const maTK = oChonVaiTro.dataset.doiVaiTro;
+  if (!window.confirm(`Đổi vai trò tài khoản ${maTK} thành "${oChonVaiTro.value}"?`)) {
+    veQuanTri();
+    veIcon();
+    return;
+  }
+  try {
+    await goiApi(`/api/tai-khoan/${encodeURIComponent(maTK)}/vai-tro`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ vaiTro: oChonVaiTro.value }),
+    });
+    hienThongBao("Đã cập nhật vai trò.");
+  } catch (loi) {
+    hienThongBao(loi.message || "Không thể đổi vai trò.");
+  }
+  await lamMoiDuLieuQuanTri();
+});
+
+document.addEventListener("submit", async (suKien) => {
+  if (suKien.target.id !== "formTaoNhanVien") return;
+  suKien.preventDefault();
+  const duLieu = Object.fromEntries(new FormData(suKien.target).entries());
+  try {
+    await goiApi("/api/tai-khoan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(duLieu),
+    });
+    hienThongBao("Đã tạo tài khoản nhân viên.");
+    await lamMoiDuLieuQuanTri();
+  } catch (loi) {
+    hienThongBao(loi.message || "Không thể tạo tài khoản.");
+  }
+});
+
 async function khoiDong() {
   khoiTaoNutXoaTimKiem();
   docBoLocTuUrl();
@@ -2507,12 +3109,28 @@ async function khoiDong() {
     const phien = await goiApi("/api/auth/session");
     tokenCsrf = phien.csrfToken;
     duLieuLuu.taiKhoan = phien.nguoiDung;
+    if (duLieuLuu.taiKhoan) {
+      try {
+        localStorage.setItem(
+          KHOA_TAI_KHOAN_GAN_NHAT,
+          duLieuLuu.taiKhoan.id || duLieuLuu.taiKhoan.tenTaiKhoan || "",
+        );
+      } catch {}
+      duLieuLuu.gioHang = docGioHangTuStorage();
+    } else {
+      try {
+        localStorage.removeItem(KHOA_TAI_KHOAN_GAN_NHAT);
+      } catch {}
+      duLieuLuu.gioHang = docGioHangTuStorage(`${TIEN_TO_KHOA_GIO_HANG}khach`);
+    }
+    capNhatHienThiGioHang();
   } catch (loi) {
     console.error("Không thể kiểm tra phiên đăng nhập.", loi);
     hienThongBao(
       "Không thể kiểm tra đăng nhập. Hãy tải lại trang nếu cần đăng nhập.",
     );
   }
+  await taiPhuongThucThanhToan();
   capNhatGiaoDienTaiKhoan();
   const vaiTro = duLieuLuu.taiKhoan?.vaiTro;
   const laQuanTri = vaiTro === "nhan_vien" || vaiTro === "admin";

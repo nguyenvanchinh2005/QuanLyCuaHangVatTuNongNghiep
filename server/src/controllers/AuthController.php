@@ -158,6 +158,13 @@ final class AuthController
             return;
         }
 
+        if ((int) ($taiKhoan['trang_thai'] ?? 1) !== 1) {
+            JsonResponse::gui([
+                'error' => ['code' => 'account_locked', 'message' => 'Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.'],
+            ], 403);
+            return;
+        }
+
         unset($_SESSION['login_failed_count'], $_SESSION['login_locked_until']);
 
         session_regenerate_id(true);
@@ -327,7 +334,7 @@ final class AuthController
         $this->authData->datLaiMatKhauTheoEmail($email, $matKhauMoi);
 
         $taiKhoan = $this->authData->timTheoTenHoacEmail($email);
-        if ($taiKhoan !== null) {
+        if ($taiKhoan !== null && (int) ($taiKhoan['trang_thai'] ?? 1) === 1) {
             session_regenerate_id(true);
             $_SESSION['nguoi_dung'] = Auth::taoThongTinNguoiDung($taiKhoan);
             unset($_SESSION['csrf_token']);

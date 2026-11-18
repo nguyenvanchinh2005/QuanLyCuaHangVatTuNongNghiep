@@ -5,10 +5,26 @@ require_once __DIR__ . '/../http/JsonResponse.php';
 require_once __DIR__ . '/../middlewares/Auth.php';
 require_once __DIR__ . '/../models/Product.php';
 require_once __DIR__ . '/../models/AdminData.php';
+require_once __DIR__ . '/../models/OrderException.php';
+require_once __DIR__ . '/../models/OrderData.php';
 require_once __DIR__ . '/../models/AuthData.php';
+require_once __DIR__ . '/../models/ActivityLog.php';
+require_once __DIR__ . '/../models/ProfileData.php';
 require_once __DIR__ . '/../controllers/ProductController.php';
 require_once __DIR__ . '/../controllers/AdminController.php';
+require_once __DIR__ . '/../controllers/OrderController.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
+require_once __DIR__ . '/../controllers/TaiKhoanController.php';
+require_once __DIR__ . '/../controllers/ProfileController.php';
+
+// Dùng lại kết nối chung do public/index.php tạo; nếu file này được gọi riêng thì tự tạo.
+if (!isset($ketNoi) || !is_callable($ketNoi)) {
+    $taoKetNoiGoc = require __DIR__ . '/../config/database.php';
+    $pdoDungChung = null;
+    $ketNoi = static function () use (&$pdoDungChung, $taoKetNoiGoc): PDO {
+        return $pdoDungChung ??= $taoKetNoiGoc();
+    };
+}
 
 $phuongThuc = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $duongDan = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
@@ -37,6 +53,12 @@ $tuChoiPhuongThuc = static function (string $choPhep): void {
     ], 405);
 };
 
+$taoDieuKhienSanPham = static fn (): ProductController => new ProductController(
+    new Product($ketNoi()),
+    new ActivityLog($ketNoi())
+);
+
+// ---------- Xác thực ----------
 if ($duongDan === '/api/auth/session') {
     if ($phuongThuc !== 'GET') {
         $tuChoiPhuongThuc('GET');
@@ -74,8 +96,7 @@ if (in_array($duongDan, [
         return;
     }
 
-    $taoKetNoi = require __DIR__ . '/../config/database.php';
-    $dieuKhienAuth = new AuthController(new AuthData($taoKetNoi()));
+    $dieuKhienAuth = new AuthController(new AuthData($ketNoi()));
 
     match ($duongDan) {
         '/api/auth/send-otp' => $dieuKhienAuth->guiMaXacNhan($duLieu),
@@ -87,73 +108,232 @@ if (in_array($duongDan, [
     return;
 }
 
+// ---------- Hồ sơ cá nhân (khách hàng) ----------
+if ($duongDan === '/api/ho-so') {
+    if ($phuongThuc === 'GET') {
+        if (Auth::yeuCauQuyen('ho_so.xem')) {
+            (new ProfileController(new ProfileData($ketNoi())))->hienThi();
+        }
+        return;
+    }
+    if (!in_array($phuongThuc, ['PUT', 'PATCH'], true)) {
+        $tuChoiPhuongThuc('GET, PUT, PATCH');
+        return;
+    }
+    if (!Auth::yeuCauQuyen('ho_so.sua') || !Auth::kiemTraTokenCsrf()) {
+        return;
+    }
+    $duLieu = $docDuLieuJson();
+    if ($duLieu !== null) {
+        (new ProfileController(new ProfileData($ketNoi())))->capNhat($duLieu);
+    }
+    return;
+}
+
+// ---------- Quản trị ----------
 if ($duongDan === '/api/quan-tri') {
     if ($phuongThuc !== 'GET') {
         $tuChoiPhuongThuc('GET');
         return;
     }
-    if (!Auth::yeuCauVaiTro(['nhan_vien', 'admin'])) {
+    if (!Auth::yeuCauQuyen('quan_tri.xem')) {
         return;
     }
 
-    $taoKetNoi = require __DIR__ . '/../config/database.php';
-    (new AdminController(new AdminData($taoKetNoi())))->hienThiDuLieu();
+    // Danh sách tài khoản chỉ gửi cho người có quyền tai_khoan.xem (admin).
+    (new AdminController(new AdminData($ketNoi())))->hienThiDuLieu(Auth::coQuyen('tai_khoan.xem'));
     return;
 }
 
+if ($duongDan === '/api/nhat-ky') {
+    if ($phuongThuc !== 'GET') {
+        $tuChoiPhuongThuc('GET');
+        return;
+    }
+    if (!Auth::yeuCauQuyen('nhat_ky.xem')) {
+        return;
+    }
+
+    (new AdminController(new AdminData($ketNoi()), new ActivityLog($ketNoi())))->hienThiNhatKy();
+    return;
+}
+
+// ---------- Quản lý tài khoản (admin) ----------
+if ($duongDan === '/api/tai-khoan') {
+    if ($phuongThuc !== 'POST') {
+        $tuChoiPhuongThuc('POST');
+        return;
+    }
+    if (!Auth::yeuCauQuyen('tai_khoan.tao') || !Auth::kiemTraTokenCsrf()) {
+        return;
+    }
+    $duLieu = $docDuLieuJson();
+    if ($duLieu !== null) {
+        (new TaiKhoanController(new AuthData($ketNoi()), new ActivityLog($ketNoi())))->taoNhanVien($duLieu);
+    }
+    return;
+}
+
+if (preg_match('#^/api/tai-khoan/([^/]+)/(trang-thai|vai-tro)$#D', $duongDan, $khop) === 1) {
+    if ($phuongThuc !== 'PATCH') {
+        $tuChoiPhuongThuc('PATCH');
+        return;
+    }
+    $quyenCan = $khop[2] === 'trang-thai' ? 'tai_khoan.khoa' : 'tai_khoan.doi_vai_tro';
+    if (!Auth::yeuCauQuyen($quyenCan) || !Auth::kiemTraTokenCsrf()) {
+        return;
+    }
+    $duLieu = $docDuLieuJson();
+    if ($duLieu === null) {
+        return;
+    }
+
+    $dieuKhienTaiKhoan = new TaiKhoanController(new AuthData($ketNoi()), new ActivityLog($ketNoi()));
+    $maTK = rawurldecode($khop[1]);
+    if ($khop[2] === 'trang-thai') {
+        $dieuKhienTaiKhoan->datTrangThai($maTK, $duLieu);
+    } else {
+        $dieuKhienTaiKhoan->datVaiTro($maTK, $duLieu);
+    }
+    return;
+}
+
+// ---------- Đơn hàng & Thanh toán (quy) ----------
+if ($duongDan === '/api/don-hang/phuong-thuc') {
+    if ($phuongThuc !== 'GET') {
+        $tuChoiPhuongThuc('GET');
+        return;
+    }
+
+    (new OrderController(new OrderData($ketNoi())))->hienThiPhuongThucThanhToan();
+    return;
+}
+
+if ($duongDan === '/api/don-hang') {
+    if ($phuongThuc === 'GET') {
+        if (!Auth::yeuCauDangNhap()) {
+            return;
+        }
+
+        $nguoiDung = Auth::nguoiDungHienTai();
+        (new OrderController(new OrderData($ketNoi())))->hienThiDanhSach($nguoiDung);
+        return;
+    }
+
+    if ($phuongThuc !== 'POST') {
+        $tuChoiPhuongThuc('GET, POST');
+        return;
+    }
+
+    if (!Auth::yeuCauDangNhap() || !Auth::kiemTraTokenCsrf()) {
+        return;
+    }
+
+    $duLieu = $docDuLieuJson();
+    if ($duLieu === null) {
+        return;
+    }
+
+    $nguoiDung = Auth::nguoiDungHienTai();
+    (new OrderController(new OrderData($ketNoi())))->taoDonHang($duLieu, (string) ($nguoiDung['id'] ?? ''));
+    return;
+}
+
+if (preg_match('#^/api/don-hang/([^/]+)$#D', $duongDan, $khop) === 1) {
+    $maHD = rawurldecode($khop[1]);
+
+    if ($phuongThuc === 'GET') {
+        if (!Auth::yeuCauDangNhap()) {
+            return;
+        }
+
+        $nguoiDung = Auth::nguoiDungHienTai();
+        (new OrderController(new OrderData($ketNoi())))->hienThiChiTiet($maHD, $nguoiDung);
+        return;
+    }
+
+    if ($phuongThuc !== 'PATCH') {
+        $tuChoiPhuongThuc('GET, PATCH');
+        return;
+    }
+
+    if (!Auth::yeuCauVaiTro(['nhan_vien', 'admin']) || !Auth::kiemTraTokenCsrf()) {
+        return;
+    }
+
+    $duLieu = $docDuLieuJson();
+    if ($duLieu === null) {
+        return;
+    }
+
+    (new OrderController(new OrderData($ketNoi())))->capNhatDonHang($maHD, $duLieu);
+    return;
+}
+
+// ---------- Sản phẩm ----------
 if ($duongDan === '/api/san-pham') {
     if ($phuongThuc === 'GET') {
-        $taoKetNoi = require __DIR__ . '/../config/database.php';
-        $dieuKhienSanPham = new ProductController(new Product($taoKetNoi()));
-        $dieuKhienSanPham->hienThiDanhSach();
+        // Chỉ nhân viên/admin mới được xem cả sản phẩm đã ẩn (?tatca=1).
+        $kemDaAn = ($_GET['tatca'] ?? '') === '1' && Auth::coQuyen('quan_tri.xem');
+        $taoDieuKhienSanPham()->hienThiDanhSach($kemDaAn);
         return;
     }
     if ($phuongThuc !== 'POST') {
         $tuChoiPhuongThuc('GET, POST');
         return;
     }
-    if (!Auth::yeuCauVaiTro(['admin']) || !Auth::kiemTraTokenCsrf()) {
+    if (!Auth::yeuCauQuyen('san_pham.them') || !Auth::kiemTraTokenCsrf()) {
         return;
     }
 
-    $taoKetNoi = require __DIR__ . '/../config/database.php';
-    $dieuKhienSanPham = new ProductController(new Product($taoKetNoi()));
     $duLieu = $docDuLieuJson();
     if ($duLieu !== null) {
-        $dieuKhienSanPham->taoSanPham($duLieu);
+        $taoDieuKhienSanPham()->taoSanPham($duLieu);
     }
     return;
 }
 
-if (preg_match('#^/api/san-pham/([^/]+)(/hinh-anh)?$#D', $duongDan, $khop) === 1) {
+if (preg_match('#^/api/san-pham/([^/]+)(/hinh-anh|/an|/khoi-phuc)?$#D', $duongDan, $khop) === 1) {
     $maSP = rawurldecode($khop[1]);
+    $hauTo = $khop[2] ?? '';
 
-    if (($khop[2] ?? '') === '/hinh-anh') {
+    if ($hauTo === '/hinh-anh') {
         if ($phuongThuc !== 'GET') {
             $tuChoiPhuongThuc('GET');
             return;
         }
-        $taoKetNoi = require __DIR__ . '/../config/database.php';
-        $dieuKhienSanPham = new ProductController(new Product($taoKetNoi()));
-        $dieuKhienSanPham->hienThiHinhAnh($maSP);
+        $taoDieuKhienSanPham()->hienThiHinhAnh($maSP);
+        return;
+    }
+
+    if ($hauTo === '/an' || $hauTo === '/khoi-phuc') {
+        if ($phuongThuc !== 'POST') {
+            $tuChoiPhuongThuc('POST');
+            return;
+        }
+        $quyenCan = $hauTo === '/an' ? 'san_pham.an' : 'san_pham.khoi_phuc';
+        if (!Auth::yeuCauQuyen($quyenCan) || !Auth::kiemTraTokenCsrf()) {
+            return;
+        }
+        $taoDieuKhienSanPham()->anSanPham($maSP, $hauTo === '/an');
         return;
     }
 
     if ($phuongThuc === 'GET') {
-        $taoKetNoi = require __DIR__ . '/../config/database.php';
-        $dieuKhienSanPham = new ProductController(new Product($taoKetNoi()));
-        $dieuKhienSanPham->hienThiChiTiet($maSP);
+        $taoDieuKhienSanPham()->hienThiChiTiet($maSP, Auth::coQuyen('quan_tri.xem'));
         return;
     }
     if (!in_array($phuongThuc, ['PUT', 'PATCH', 'DELETE'], true)) {
         $tuChoiPhuongThuc('GET, PUT, PATCH, DELETE');
         return;
     }
-    if (!Auth::yeuCauVaiTro(['admin']) || !Auth::kiemTraTokenCsrf()) {
+
+    // Sửa: nhân viên + admin. Xóa vĩnh viễn: chỉ admin.
+    $quyenCan = $phuongThuc === 'DELETE' ? 'san_pham.xoa' : 'san_pham.sua';
+    if (!Auth::yeuCauQuyen($quyenCan) || !Auth::kiemTraTokenCsrf()) {
         return;
     }
-    $taoKetNoi = require __DIR__ . '/../config/database.php';
-    $dieuKhienSanPham = new ProductController(new Product($taoKetNoi()));
+    $dieuKhienSanPham = $taoDieuKhienSanPham();
 
     if ($phuongThuc === 'DELETE') {
         $dieuKhienSanPham->xoaSanPham($maSP);

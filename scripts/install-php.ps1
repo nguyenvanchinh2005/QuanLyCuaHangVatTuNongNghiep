@@ -1,4 +1,4 @@
-$ErrorActionPreference = "Stop"
+﻿$ErrorActionPreference = "Stop"
 
 $thuMucGoi = Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Packages"
 $goiPHP = Get-ChildItem -LiteralPath $thuMucGoi -Directory -Filter "PHP.PHP.8.4_*" |

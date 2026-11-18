@@ -7,31 +7,32 @@ final class Product
     {
     }
 
-    public function danhSach(): array
+    public function danhSach(bool $kemDaAn = false): array
     {
         $cauTruyVan = $this->database->query(
-            'SELECT s.MaSP, s.TenSP, s.Giaban, s.Soluong, n.TenNCC, s.DviTinh,
+            'SELECT s.MaSP, s.TenSP, s.Giaban, s.Soluong, n.TenNCC, s.DviTinh, s.DaAn,
                     EXISTS (
                         SELECT 1 FROM hinhanhsanpham i WHERE i.MaSP = s.MaSP
                     ) AS CoHinhAnh
              FROM sanpham s
              LEFT JOIN ncc n ON n.MaNCC = s.MaNCC
+             ' . ($kemDaAn ? '' : 'WHERE s.DaAn = 0') . '
              ORDER BY s.TenSP, s.MaSP'
         );
 
         return array_map([$this, 'chuanHoaSanPham'], $cauTruyVan->fetchAll());
     }
 
-    public function timTheoMa(string $maSP): ?array
+    public function timTheoMa(string $maSP, bool $kemDaAn = true): ?array
     {
         $cauTruyVan = $this->database->prepare(
-            'SELECT s.MaSP, s.TenSP, s.Giaban, s.Soluong, n.TenNCC, s.DviTinh,
+            'SELECT s.MaSP, s.TenSP, s.Giaban, s.Soluong, n.TenNCC, s.DviTinh, s.DaAn,
                     EXISTS (
                         SELECT 1 FROM hinhanhsanpham i WHERE i.MaSP = s.MaSP
                     ) AS CoHinhAnh
              FROM sanpham s
              LEFT JOIN ncc n ON n.MaNCC = s.MaNCC
-             WHERE s.MaSP = :maSP
+             WHERE s.MaSP = :maSP' . ($kemDaAn ? '' : ' AND s.DaAn = 0') . '
              LIMIT 1'
         );
         $cauTruyVan->execute(['maSP' => $maSP]);
@@ -94,6 +95,15 @@ final class Product
         return $cauTruyVan->rowCount() > 0 || $this->timTheoMa($maSP) !== null;
     }
 
+    /** sản phẩm đã ẩn không hiện ở cửa hàng nhưng giữ nguyên lịch sử hóa đơn. */
+    public function datDaAn(string $maSP, bool $daAn): bool
+    {
+        $cauTruyVan = $this->database->prepare('UPDATE sanpham SET DaAn = :daAn WHERE MaSP = :maSP');
+        $cauTruyVan->execute(['daAn' => $daAn ? 1 : 0, 'maSP' => $maSP]);
+
+        return $cauTruyVan->rowCount() > 0 || $this->timTheoMa($maSP) !== null;
+    }
+
     public function xoa(string $maSP): bool
     {
         $cauTruyVan = $this->database->prepare('DELETE FROM sanpham WHERE MaSP = :maSP');
@@ -118,6 +128,7 @@ final class Product
     {
         $sanPham['Giaban'] = $sanPham['Giaban'] === null ? null : (int) $sanPham['Giaban'];
         $sanPham['Soluong'] = $sanPham['Soluong'] === null ? null : (int) $sanPham['Soluong'];
+        $sanPham['DaAn'] = (bool) ($sanPham['DaAn'] ?? false);
         $sanPham['DanhMuc'] = $this->xacDinhDanhMuc((string) ($sanPham['TenSP'] ?? ''));
         $sanPham['NhomDanhMuc'] = $this->xacDinhNhomDanhMuc((string) ($sanPham['TenSP'] ?? ''));
         $sanPham['anh'] = (bool) $sanPham['CoHinhAnh']

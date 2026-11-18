@@ -3,18 +3,18 @@ declare(strict_types=1);
 
 final class ProductController
 {
-    public function __construct(private Product $products)
+    public function __construct(private Product $products, private ?ActivityLog $nhatKy = null)
     {
     }
 
-    public function hienThiDanhSach(): void
+    public function hienThiDanhSach(bool $kemDaAn = false): void
     {
-        JsonResponse::gui($this->products->danhSach());
+        JsonResponse::gui($this->products->danhSach($kemDaAn));
     }
 
-    public function hienThiChiTiet(string $maSP): void
+    public function hienThiChiTiet(string $maSP, bool $kemDaAn = false): void
     {
-        $sanPham = $this->products->timTheoMa($maSP);
+        $sanPham = $this->products->timTheoMa($maSP, $kemDaAn);
 
         if ($sanPham === null) {
             JsonResponse::gui([
@@ -108,6 +108,7 @@ final class ProductController
         $sanPham['MaNCC'] = $maNCC;
 
         $this->products->tao($sanPham);
+        $this->nhatKy?->ghi('san_pham.them', 'sanpham', $sanPham['MaSP']);
         JsonResponse::gui($this->products->timTheoMa($sanPham['MaSP']), 201);
     }
 
@@ -134,6 +135,7 @@ final class ProductController
             return;
         }
 
+        $this->nhatKy?->ghi('san_pham.sua', 'sanpham', $maSP);
         JsonResponse::gui($this->products->timTheoMa($maSP));
     }
 
@@ -159,7 +161,21 @@ final class ProductController
             return;
         }
 
+        $this->nhatKy?->ghi('san_pham.xoa', 'sanpham', $maSP);
         JsonResponse::gui(['daXoa' => true]);
+    }
+
+    public function anSanPham(string $maSP, bool $daAn): void
+    {
+        if (!$this->products->datDaAn($maSP, $daAn)) {
+            JsonResponse::gui([
+                'error' => ['code' => 'product_not_found', 'message' => 'Không tìm thấy sản phẩm.'],
+            ], 404);
+            return;
+        }
+
+        $this->nhatKy?->ghi($daAn ? 'san_pham.an' : 'san_pham.khoi_phuc', 'sanpham', $maSP);
+        JsonResponse::gui(['daAn' => $daAn]);
     }
 
     private function kiemTraSanPham(array $duLieu): ?array

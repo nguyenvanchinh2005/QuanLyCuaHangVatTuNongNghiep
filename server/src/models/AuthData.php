@@ -18,7 +18,8 @@ final class AuthData
                     MaKH AS ma_kh,
                     MaNV AS ma_nv,
                     Email AS email,
-                    EmailDaXacMinh AS email_da_xac_minh
+                    EmailDaXacMinh AS email_da_xac_minh,
+                    TrangThai AS trang_thai
              FROM taikhoan
              WHERE TenTK = :nhap1 OR Email = :nhap2
              LIMIT 1'
@@ -44,7 +45,8 @@ final class AuthData
                     MaKH AS ma_kh,
                     MaNV AS ma_nv,
                     Email AS email,
-                    EmailDaXacMinh AS email_da_xac_minh
+                    EmailDaXacMinh AS email_da_xac_minh,
+                    TrangThai AS trang_thai
              FROM taikhoan
              WHERE MaTK = :maTK
              LIMIT 1'
@@ -192,5 +194,104 @@ final class AuthData
         ]);
 
         return $cauTruyVan->rowCount() > 0;
+    }
+
+    /** Tạo tài khoản nội bộ (admin tạo nhân viên, hoặc script CLI create-account.php). */
+    public function taoTaiKhoan(string $tenTaiKhoan, string $matKhau, string $vaiTro, ?string $email = null): array
+    {
+        $maTaiKhoan = 'TK' . strtoupper(bin2hex(random_bytes(4)));
+
+        $cauTruyVan = $this->database->prepare(
+            'INSERT INTO taikhoan (MaTK, TenTK, MatKhau, VaiTro, Email, EmailDaXacMinh, TrangThai)
+             VALUES (:maTaiKhoan, :tenTaiKhoan, :matKhau, :vaiTro, :email, 0, 1)'
+        );
+        $cauTruyVan->execute([
+            'maTaiKhoan' => $maTaiKhoan,
+            'tenTaiKhoan' => $tenTaiKhoan,
+            'matKhau' => password_hash($matKhau, PASSWORD_DEFAULT),
+            'vaiTro' => $vaiTro,
+            'email' => $email,
+        ]);
+
+        return ['id' => $maTaiKhoan, 'ten_tai_khoan' => $tenTaiKhoan, 'vai_tro' => $vaiTro];
+    }
+
+    /** @return string 'ok' | 'khong_tim_thay' | 'tu_thao_tac' | 'admin_cuoi_cung' */
+    public function datTrangThaiAnToan(string $maTK, bool $hoatDong, string $maNguoiThucHien): string
+    {
+        if ($maTK === $maNguoiThucHien) {
+            return 'tu_thao_tac';
+        }
+
+        return $this->trongGiaoDich(function () use ($maTK, $hoatDong): string {
+            $dong = $this->khoaTaiKhoan($maTK);
+            if ($dong === null) {
+                return 'khong_tim_thay';
+            }
+            if (!$hoatDong && $dong['VaiTro'] === 'admin' && (int) $dong['TrangThai'] === 1
+                && $this->demAdminHoatDong() <= 1) {
+                return 'admin_cuoi_cung';
+            }
+
+            $capNhat = $this->database->prepare('UPDATE taikhoan SET TrangThai = :trangThai WHERE MaTK = :maTK');
+            $capNhat->execute(['trangThai' => $hoatDong ? 1 : 0, 'maTK' => $maTK]);
+            return 'ok';
+        });
+    }
+
+    /** @return string 'ok' | 'khong_tim_thay' | 'tu_thao_tac' | 'admin_cuoi_cung' */
+    public function doiVaiTroAnToan(string $maTK, string $vaiTroMoi, string $maNguoiThucHien): string
+    {
+        if ($maTK === $maNguoiThucHien) {
+            return 'tu_thao_tac';
+        }
+
+        return $this->trongGiaoDich(function () use ($maTK, $vaiTroMoi): string {
+            $dong = $this->khoaTaiKhoan($maTK);
+            if ($dong === null) {
+                return 'khong_tim_thay';
+            }
+            if ($dong['VaiTro'] === 'admin' && $vaiTroMoi !== 'admin' && (int) $dong['TrangThai'] === 1
+                && $this->demAdminHoatDong() <= 1) {
+                return 'admin_cuoi_cung';
+            }
+
+            $capNhat = $this->database->prepare('UPDATE taikhoan SET VaiTro = :vaiTro WHERE MaTK = :maTK');
+            $capNhat->execute(['vaiTro' => $vaiTroMoi, 'maTK' => $maTK]);
+            return 'ok';
+        });
+    }
+
+    private function khoaTaiKhoan(string $maTK): ?array
+    {
+        $cauTruyVan = $this->database->prepare(
+            'SELECT VaiTro, TrangThai FROM taikhoan WHERE MaTK = :maTK FOR UPDATE'
+        );
+        $cauTruyVan->execute(['maTK' => $maTK]);
+        $dong = $cauTruyVan->fetch();
+
+        return $dong === false ? null : $dong;
+    }
+
+    private function demAdminHoatDong(): int
+    {
+        return (int) $this->database
+            ->query("SELECT COUNT(*) FROM taikhoan WHERE VaiTro = 'admin' AND TrangThai = 1 FOR UPDATE")
+            ->fetchColumn();
+    }
+
+    private function trongGiaoDich(callable $viec): string
+    {
+        $this->database->beginTransaction();
+        try {
+            $ketQua = $viec();
+            $ketQua === 'ok' ? $this->database->commit() : $this->database->rollBack();
+            return $ketQua;
+        } catch (Throwable $loi) {
+            if ($this->database->inTransaction()) {
+                $this->database->rollBack();
+            }
+            throw $loi;
+        }
     }
 }
